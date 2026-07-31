@@ -115,9 +115,6 @@ const RecognitionFeed: React.FunctionComponent<IRecognitionFeedProps> = (props) 
           };
         });
 
-        // Limit to the requested number of months worth of winners.
-        // Assumes roughly 2 winners per month (Critical Cog + Employee of the Month);
-        // if that ratio changes, this cap may need to be exposed as its own property later.
         const capped = mapped.slice(0, props.monthsToShow * 2);
         setWinners(capped);
       } catch (err) {
@@ -232,13 +229,8 @@ const RecognitionFeed: React.FunctionComponent<IRecognitionFeedProps> = (props) 
             );
           })}
 
-{props.nominateUrl && (
-  
-  href={props.nominateUrl}
-              target="_blank"
-              rel="noreferrer"
-              className={`${styles.card} ${styles.nominateCard}`}
-            >
+          {props.nominateUrl && (
+            <a href={props.nominateUrl} target="_blank" rel="noreferrer" className={`${styles.card} ${styles.nominateCard}`}>
               <span className={styles.nominateText}>Know someone who deserves recognition?</span>
               <span className={styles.nominateCta}>Nominate Them →</span>
             </a>
