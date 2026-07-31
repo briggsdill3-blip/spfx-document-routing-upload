@@ -1,79 +1,45 @@
-# Metadata Compliance Dashboard
+# Recognition Feed
 
-An SPFx web part that scans a SharePoint document library and shows how well it's actually tagged. It reports the percentage of items with complete metadata, breaks down which fields are missing most often, and lets you filter by content type. Built with React, TypeScript, and PnPjs.
-
-![Dashboard showing 68% completion, at risk status](screenshots/dashboard-at-risk.png)
-
-## Why this exists
-
-Most SharePoint document libraries look organized on the surface but have inconsistent metadata underneath: missing owners, blank review dates, documents with no classification. That gap is invisible until someone actually needs to search, report on, or migrate that content, and by then it's a much bigger cleanup job.
-
-This project grew out of real migration work managing a 740,000+ file SharePoint migration where metadata tagging accuracy was tracked as a hard requirement (96% on one 36,000+ file migration). A dashboard like this is the kind of tool that would have made that tracking visible in real time instead of after the fact, via a spreadsheet export.
+An SPFx web part that displays recent award winners as a scrolling card feed. Built for a SharePoint landing page as a lightweight way to keep recognition visible without a separate dashboard page nobody visits.
 
 ## What it does
 
-- Scans a document library and calculates what percentage of items have every required metadata field filled in
-- Automatically discovers a library's custom metadata columns instead of assuming a fixed schema, so it works across libraries with completely different fields
-- Skips libraries that have no custom metadata to evaluate, rather than erroring out
-- Breaks down exactly which fields are causing the most gaps
-- Filters by a content-type-style column when the library has one
-- Color-codes the result (on target / needs attention / at risk) against configurable thresholds
-- Adapts to light and dark SharePoint site themes automatically
+- Reads winners from a SharePoint list (built and tested against a Critical Cog / Employee of the Month list, but not hardcoded to it)
+- Shows the most recent N months of winners as auto-scrolling cards, pause/play control included
+- Pulls each winner's photo from their Microsoft 365 profile, no photo library to maintain
+- Click any card for the full detail: justification, team members if it's a team award
+- A "Nominate Someone" tile lives in the same scroll, linking out to the nomination form
 
-![Dashboard with a document type filter applied](screenshots/dashboard-filtered.png)
+## Why it's dynamic instead of hardcoded
 
-![Dashboard showing a fully tagged library at 92%](screenshots/dashboard-on-target.png)
+Every field is mapped through the property pane instead of assumed. Name, photo source, award type, month, year, justification, team fields, all of it is picked from real dropdowns populated from whatever list you point the web part at, using [@pnp/spfx-property-controls](https://github.com/pnp/sp-dev-fx-property-controls) for the list and column pickers.
 
-## Configuration
+That means the same web part works on a list with a completely different schema than the one it was built against. Point it at a different list, remap the fields, done. No code changes.
 
-The web part's property pane lets a site owner adjust it per instance without touching code:
+## Tech stack
 
-- Lock the dashboard to a specific library, or leave it open so users can switch between any library that has custom metadata
-- Exclude specific fields from the completeness calculation (useful for optional fields like internal notes)
-- Set custom thresholds for what counts as "on target" versus "at risk"
+- SPFx 1.23, React function components, TypeScript
+- PnPjs for all SharePoint calls
+- `@pnp/spfx-property-controls` for the list/column picker property pane
+- No Graph calls, no external CDN dependencies, same-origin SharePoint REST only
 
-![Web part property pane showing configuration options](screenshots/property-pane.png)
+## Built entirely through CI, no local Node install
 
-![Dashboard in light theme](screenshots/dashboard-light-mode.png)
+This one's worth calling out. It was built on a locked-down government machine with no ability to install Node.js or Git locally. The whole project, scaffolding, every file, every build, went through a GitLab CI/CD pipeline running on Army's DevSecOps Platform (DSOP). Code gets written and committed through GitLab's Web IDE, a pipeline job installs dependencies and runs the SPFx build in a container, and the finished `.sppkg` comes back as a downloadable pipeline artifact.
 
-## How it's built
+No local dev environment exists for this project at all. That's not a limitation, it's how it was built from the first commit.
 
-- **SPFx 1.23** web part, React function components with hooks
-- **PnPjs** for all SharePoint REST calls (no raw fetch, no hand-built OData strings)
-- **TypeScript** throughout, strict interfaces for every SharePoint response shape
-- Custom SVG progress ring, no charting library dependency
-- SCSS driven by CSS custom properties, so the same styles adapt automatically to a site's real color theme via `onThemeChanged`
-- Zero external font or asset dependencies, everything ships inside the compiled bundle
+## Status
 
-### How the library discovery works
-
-On load, the web part queries every document library on the site, checks each one's field schema, and filters out SharePoint's own system columns (things like Created, Modified, Content Type) using a combination of naming convention and field metadata. Whatever custom columns are left become the metadata the dashboard evaluates. A library with no custom columns is skipped from the picker instead of showing an error.
-
-## Known limitations
-
-- Item scanning is capped per library (SharePoint's REST API has practical limits on how many items come back in a single call). True paging for very large libraries is on the roadmap, not yet built.
-- Per-instance color and font customization was attempted but pulled before shipping after it caused an intermittent SPFx load failure tied to applying styles during the web part's render cycle. The data-focused configuration options (library lock, thresholds, excluded fields) all work correctly. This is a good candidate for a follow-up fix using a safer styling approach.
-- No cross-site aggregation. Each instance reports on libraries within the site it's deployed to. A tenant-wide rollup across multiple sites is a reasonable next step but would need Microsoft Graph with broader permissions, which is a real conversation to have with a tenant admin before building, especially in a DoD or GCC High environment.
-
-## Deployment notes for DoD / GCC High environments
-
-- All data calls go through SharePoint's own REST API via PnPjs. There are no calls to Microsoft Graph, no external APIs, and no third-party CDN dependencies in the shipped bundle, which matters in tenants that block outbound calls to unapproved domains.
-- Deploys cleanly through a site collection app catalog, so it doesn't require a tenant-wide admin approval to pilot on a single site.
-- No premium connectors, no Dataverse, no custom connector usage, so it doesn't run into the DLP policies that commonly block Power Platform automation in restricted tenants.
+Compiles and packages clean through the pipeline. Not yet deployed against a real site with real data, the site collection app catalog for the target site isn't enabled yet. Once that's in place, this section gets updated with actual results instead of expected behavior.
 
 ## Local development
 
+There is no local dev environment for this project. To build:
+
 ```
 npm install
-npm run start
-```
-
-Requires Node 22.x. Opens the SharePoint hosted workbench for local debugging against a real tenant (SPFx removed local-only workbench support in newer versions).
-
-To package for deployment:
-
-```
 npm run build
 ```
 
-This produces a `.sppkg` file in `sharepoint/solution`, ready to upload to a SharePoint app catalog.
+Run through CI, not locally. Produces a `.sppkg` file in `sharepoint/solution`, downloadable as a pipeline artifact.
