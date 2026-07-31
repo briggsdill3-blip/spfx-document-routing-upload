@@ -1,4 +1,4 @@
-declare interface IMetadataComplianceWebPartStrings {
+declare interface IRecognitionFeedWebPartStrings {
   PropertyPaneDescription: string;
   BasicGroupName: string;
   DescriptionFieldLabel: string;
@@ -13,7 +13,7 @@ declare interface IMetadataComplianceWebPartStrings {
   UnknownEnvironment: string;
 }
 
-declare module 'MetadataComplianceWebPartStrings' {
-  const strings: IMetadataComplianceWebPartStrings;
+declare module 'RecognitionFeedWebPartStrings' {
+  const strings: IRecognitionFeedWebPartStrings;
   export = strings;
 }
