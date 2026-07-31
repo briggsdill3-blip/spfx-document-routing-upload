@@ -37,6 +37,49 @@ const getPhotoUrl = (siteAbsoluteUrl: string, email: string): string => {
   return `${origin}/_layouts/15/userphoto.aspx?size=L&accountname=${encodeURIComponent(email)}`;
 };
 
+interface IRecognitionOverlayProps {
+  winner: IWinnerItem;
+  siteAbsoluteUrl: string;
+  onClose: () => void;
+}
+
+const RecognitionOverlay: React.FunctionComponent<IRecognitionOverlayProps> = ({ winner, siteAbsoluteUrl, onClose }) => {
+  const displayName = winner.IsTeamAward && winner.TeamName ? winner.TeamName : winner.Name;
+  const badgeClass = winner.AwardType.toLowerCase().includes('critical') ? styles.badgeCriticalCog : styles.badgeEmployee;
+
+  return (
+    <div className={styles.overlayBackdrop} onClick={onClose}>
+      <div className={styles.overlayCard} onClick={(e) => e.stopPropagation()}>
+        <button type="button" className={styles.overlayClose} onClick={onClose} aria-label="Close">
+          ×
+        </button>
+
+        {winner.PhotoEmail && (
+          <img
+            className={styles.overlayPhoto}
+            src={getPhotoUrl(siteAbsoluteUrl, winner.PhotoEmail)}
+            alt=""
+          />
+        )}
+
+        <h3 className={styles.overlayName}>{displayName}</h3>
+
+        <span className={`${styles.cardBadge} ${badgeClass}`}>{winner.AwardType}</span>
+
+        <p className={styles.overlayMonth}>{winner.Month} {winner.Year}</p>
+
+        {winner.IsTeamAward && winner.TeamMembers && (
+          <p className={styles.overlayTeamMembers}>
+            <strong>Team Members:</strong> {winner.TeamMembers}
+          </p>
+        )}
+
+        <p className={styles.overlayJustification}>{winner.Justification}</p>
+      </div>
+    </div>
+  );
+};
+
 const RecognitionFeed: React.FunctionComponent<IRecognitionFeedProps> = (props) => {
   const [winners, setWinners] = useState<IWinnerItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -242,49 +285,6 @@ const RecognitionFeed: React.FunctionComponent<IRecognitionFeedProps> = (props) 
         <RecognitionOverlay winner={selectedWinner} siteAbsoluteUrl={props.siteAbsoluteUrl} onClose={() => setSelectedWinner(null)} />
       )}
     </section>
-  );
-};
-
-interface IRecognitionOverlayProps {
-  winner: IWinnerItem;
-  siteAbsoluteUrl: string;
-  onClose: () => void;
-}
-
-const RecognitionOverlay: React.FunctionComponent<IRecognitionOverlayProps> = ({ winner, siteAbsoluteUrl, onClose }) => {
-  const displayName = winner.IsTeamAward && winner.TeamName ? winner.TeamName : winner.Name;
-  const badgeClass = winner.AwardType.toLowerCase().includes('critical') ? styles.badgeCriticalCog : styles.badgeEmployee;
-
-  return (
-    <div className={styles.overlayBackdrop} onClick={onClose}>
-      <div className={styles.overlayCard} onClick={(e) => e.stopPropagation()}>
-        <button type="button" className={styles.overlayClose} onClick={onClose} aria-label="Close">
-          ×
-        </button>
-
-        {winner.PhotoEmail && (
-          <img
-            className={styles.overlayPhoto}
-            src={getPhotoUrl(siteAbsoluteUrl, winner.PhotoEmail)}
-            alt=""
-          />
-        )}
-
-        <h3 className={styles.overlayName}>{displayName}</h3>
-
-        <span className={`${styles.cardBadge} ${badgeClass}`}>{winner.AwardType}</span>
-
-        <p className={styles.overlayMonth}>{winner.Month} {winner.Year}</p>
-
-        {winner.IsTeamAward && winner.TeamMembers && (
-          <p className={styles.overlayTeamMembers}>
-            <strong>Team Members:</strong> {winner.TeamMembers}
-          </p>
-        )}
-
-        <p className={styles.overlayJustification}>{winner.Justification}</p>
-      </div>
-    </div>
   );
 };
 
