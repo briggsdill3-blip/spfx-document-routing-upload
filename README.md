@@ -4,7 +4,7 @@ An SPFx web part that displays recent award winners as a scrolling card feed. Bu
 
 ## What it does
 
-- Reads winners from a SharePoint list (built and tested against a Critical Cog / Employee of the Month list, but not hardcoded to it)
+- Reads winners from a SharePoint list (built and tested against a Employee of the Month list, but not hardcoded to it)
 - Shows the most recent N months of winners as auto-scrolling cards, pause/play control included
 - Pulls each winner's photo from their Microsoft 365 profile, no photo library to maintain
 - Click any card for the full detail: justification, team members if it's a team award
