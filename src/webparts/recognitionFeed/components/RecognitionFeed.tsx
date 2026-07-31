@@ -232,9 +232,9 @@ const RecognitionFeed: React.FunctionComponent<IRecognitionFeedProps> = (props) 
             );
           })}
 
-          {props.nominateUrl && (
-            
-              href={props.nominateUrl}
+{props.nominateUrl && (
+  
+  href={props.nominateUrl}
               target="_blank"
               rel="noreferrer"
               className={`${styles.card} ${styles.nominateCard}`}
