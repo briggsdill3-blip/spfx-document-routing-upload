@@ -131,8 +131,7 @@ const RecognitionFeed: React.FunctionComponent<IRecognitionFeedProps> = (props) 
     loadWinners().catch((err) => console.error(err));
   }, [props.sp, props.listId, props.fieldName, props.fieldPhotoEmail, props.fieldAwardType, props.fieldMonth, props.fieldYear, props.fieldJustification, props.fieldTeamFlag, props.fieldTeamName, props.fieldTeamMembers, props.monthsToShow]);
 
-  const isCurrentMonth = (item: IWinnerItem, index: number): boolean => {
-    // The first 1-2 items (most recent, since sorted descending) are treated as "new"
+  const isNewWinner = (index: number): boolean => {
     return index < 2;
   };
 
@@ -141,7 +140,7 @@ const RecognitionFeed: React.FunctionComponent<IRecognitionFeedProps> = (props) 
 
   if (loading) {
     return (
-      <section className={`${styles.recognitionFeed} ${props.isDarkTheme ? styles.dark : ''}`}>
+      <section className={styles.recognitionFeed}>
         <div className={styles.loadingState}>
           <div className={styles.spinner} />
           <span>Loading recognition feed...</span>
@@ -152,7 +151,7 @@ const RecognitionFeed: React.FunctionComponent<IRecognitionFeedProps> = (props) 
 
   if (!fieldsConfigured) {
     return (
-      <section className={`${styles.recognitionFeed} ${props.isDarkTheme ? styles.dark : ''}`}>
+      <section className={styles.recognitionFeed}>
         <div className={styles.errorState}>
           This web part needs to be configured. Open the edit panel and set the Data Source and Field Mapping options.
         </div>
@@ -162,7 +161,7 @@ const RecognitionFeed: React.FunctionComponent<IRecognitionFeedProps> = (props) 
 
   if (error) {
     return (
-      <section className={`${styles.recognitionFeed} ${props.isDarkTheme ? styles.dark : ''}`}>
+      <section className={styles.recognitionFeed}>
         <div className={styles.errorState}>{error}</div>
       </section>
     );
@@ -170,17 +169,16 @@ const RecognitionFeed: React.FunctionComponent<IRecognitionFeedProps> = (props) 
 
   if (winners.length === 0) {
     return (
-      <section className={`${styles.recognitionFeed} ${props.isDarkTheme ? styles.dark : ''}`}>
+      <section className={styles.recognitionFeed}>
         <div className={styles.emptyState}>No recognition data found yet.</div>
       </section>
     );
   }
 
-  // Duplicate the list once so the CSS animation can loop seamlessly.
   const loopedWinners = [...winners, ...winners];
 
   return (
-    <section className={`${styles.recognitionFeed} ${props.isDarkTheme ? styles.dark : ''}`}>
+    <section className={styles.recognitionFeed}>
       <div className={styles.header}>
         <h2 className={styles.title}>Recent Recognition</h2>
         <button
@@ -205,34 +203,34 @@ const RecognitionFeed: React.FunctionComponent<IRecognitionFeedProps> = (props) 
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
-          {loopedWinners.map((winner, index) => (
-            <button
-              type="button"
-              key={`${winner.Id}-${index}`}
-              className={`${styles.card} ${isCurrentMonth(winner, index % winners.length) ? styles.newCard : ''}`}
-              onClick={() => setSelectedWinner(winner)}
-            >
-              {winner.PhotoEmail && (
-                <img
-                  className={styles.cardPhoto}
-                  src={getPhotoUrl(props.siteAbsoluteUrl, winner.PhotoEmail)}
-                  alt=""
-                />
-              )}
-              <div className={styles.cardBody}>
-                <span className={styles.cardName}>
-                  {winner.IsTeamAward && winner.TeamName ? winner.TeamName : winner.Name}
-                </span>
-                <span className={`${styles.cardBadge} ${winner.AwardType.toLowerCase().includes('critical') ? styles.badgeCriticalCog : styles.badgeEmployee}`}>
-                  {winner.AwardType}
-                </span>
-                <span className={styles.cardMonth}>{winner.Month} {winner.Year}</span>
-              </div>
-              {isCurrentMonth(winner, index % winners.length) && (
-                <span className={styles.newBadge}>New</span>
-              )}
-            </button>
-          ))}
+          {loopedWinners.map((winner, index) => {
+            const displayName = winner.IsTeamAward && winner.TeamName ? winner.TeamName : winner.Name;
+            const badgeClass = winner.AwardType.toLowerCase().includes('critical') ? styles.badgeCriticalCog : styles.badgeEmployee;
+            const isNew = isNewWinner(index % winners.length);
+
+            return (
+              <button
+                type="button"
+                key={`${winner.Id}-${index}`}
+                className={`${styles.card} ${isNew ? styles.newCard : ''}`}
+                onClick={() => setSelectedWinner(winner)}
+              >
+                {winner.PhotoEmail && (
+                  <img
+                    className={styles.cardPhoto}
+                    src={getPhotoUrl(props.siteAbsoluteUrl, winner.PhotoEmail)}
+                    alt=""
+                  />
+                )}
+                <div className={styles.cardBody}>
+                  <span className={styles.cardName}>{displayName}</span>
+                  <span className={`${styles.cardBadge} ${badgeClass}`}>{winner.AwardType}</span>
+                  <span className={styles.cardMonth}>{winner.Month} {winner.Year}</span>
+                </div>
+                {isNew && <span className={styles.newBadge}>New</span>}
+              </button>
+            );
+          })}
 
           {props.nominateUrl && (
             
@@ -248,47 +246,53 @@ const RecognitionFeed: React.FunctionComponent<IRecognitionFeedProps> = (props) 
         </div>
       </div>
 
-      {selectedWinner && (
-        <div className={styles.overlayBackdrop} onClick={() => setSelectedWinner(null)}>
-          <div className={styles.overlayCard} onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className={styles.overlayClose}
-              onClick={() => setSelectedWinner(null)}
-              aria-label="Close"
-            >
-              ×
-            </button>
-
-            {selectedWinner.PhotoEmail && (
-              <img
-                className={styles.overlayPhoto}
-                src={getPhotoUrl(props.siteAbsoluteUrl, selectedWinner.PhotoEmail)}
-                alt=""
-              />
-            )}
-
-            <h3 className={styles.overlayName}>
-              {selectedWinner.IsTeamAward && selectedWinner.TeamName ? selectedWinner.TeamName : selectedWinner.Name}
-            </h3>
-
-            <span className={`${styles.cardBadge} ${selectedWinner.AwardType.toLowerCase().includes('critical') ? styles.badgeCriticalCog : styles.badgeEmployee}`}>
-              {selectedWinner.AwardType}
-            </span>
-
-            <p className={styles.overlayMonth}>{selectedWinner.Month} {selectedWinner.Year}</p>
-
-            {selectedWinner.IsTeamAward && selectedWinner.TeamMembers && (
-              <p className={styles.overlayTeamMembers}>
-                <strong>Team Members:</strong> {selectedWinner.TeamMembers}
-              </p>
-            )}
-
-            <p className={styles.overlayJustification}>{selectedWinner.Justification}</p>
-          </div>
-        </div>
+      {selectedWinner !== null && (
+        <RecognitionOverlay winner={selectedWinner} siteAbsoluteUrl={props.siteAbsoluteUrl} onClose={() => setSelectedWinner(null)} />
       )}
     </section>
+  );
+};
+
+interface IRecognitionOverlayProps {
+  winner: IWinnerItem;
+  siteAbsoluteUrl: string;
+  onClose: () => void;
+}
+
+const RecognitionOverlay: React.FunctionComponent<IRecognitionOverlayProps> = ({ winner, siteAbsoluteUrl, onClose }) => {
+  const displayName = winner.IsTeamAward && winner.TeamName ? winner.TeamName : winner.Name;
+  const badgeClass = winner.AwardType.toLowerCase().includes('critical') ? styles.badgeCriticalCog : styles.badgeEmployee;
+
+  return (
+    <div className={styles.overlayBackdrop} onClick={onClose}>
+      <div className={styles.overlayCard} onClick={(e) => e.stopPropagation()}>
+        <button type="button" className={styles.overlayClose} onClick={onClose} aria-label="Close">
+          ×
+        </button>
+
+        {winner.PhotoEmail && (
+          <img
+            className={styles.overlayPhoto}
+            src={getPhotoUrl(siteAbsoluteUrl, winner.PhotoEmail)}
+            alt=""
+          />
+        )}
+
+        <h3 className={styles.overlayName}>{displayName}</h3>
+
+        <span className={`${styles.cardBadge} ${badgeClass}`}>{winner.AwardType}</span>
+
+        <p className={styles.overlayMonth}>{winner.Month} {winner.Year}</p>
+
+        {winner.IsTeamAward && winner.TeamMembers && (
+          <p className={styles.overlayTeamMembers}>
+            <strong>Team Members:</strong> {winner.TeamMembers}
+          </p>
+        )}
+
+        <p className={styles.overlayJustification}>{winner.Justification}</p>
+      </div>
+    </div>
   );
 };
 

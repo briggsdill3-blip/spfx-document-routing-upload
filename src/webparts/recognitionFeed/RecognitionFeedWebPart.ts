@@ -133,14 +133,19 @@ export default class RecognitionFeedWebPart extends BaseClientSideWebPart<IRecog
   }
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
+    // Cast to `any` - @pnp/spfx-property-controls bundles its own internal copy of the
+    // SPFx base context types, which can conflict with this project's own copy even
+    // though the actual runtime object is identical. This is a known, documented
+    // workaround for this package, not project-specific.
+    const spfxContext = this.context as any;
+
     const columnPickerProps = {
-      context: this.context,
+      context: spfxContext,
       listId: this.properties.listId,
       disabled: !this.properties.listId,
       orderBy: PropertyFieldColumnPickerOrderBy.Title,
       onPropertyChange: this.onPropertyPaneFieldChanged.bind(this),
       properties: this.properties,
-      onGetErrorMessage: null,
       deferredValidationTime: 0,
       multiSelect: false,
       displayHiddenColumns: false,
@@ -165,8 +170,7 @@ export default class RecognitionFeedWebPart extends BaseClientSideWebPart<IRecog
                   disabled: false,
                   onPropertyChange: this.onPropertyPaneFieldChanged.bind(this),
                   properties: this.properties,
-                  context: this.context,
-                  onGetErrorMessage: null,
+                  context: spfxContext,
                   deferredValidationTime: 0,
                   key: 'listPickerFieldId'
                 })
