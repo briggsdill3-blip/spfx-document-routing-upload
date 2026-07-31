@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import styles from './MetadataCompliance.module.scss';
-import type { IMetadataComplianceProps } from './IMetadataComplianceProps';
+import styles from './RecognitionFeed.module.scss';
+import type { IRecognitionFeedProps } from './IRecognitionFeedProps';
 
 interface ILibraryOption {
   Title: string;
@@ -109,7 +109,7 @@ const ProgressRing: React.FunctionComponent<IProgressRingProps> = ({ percent, ti
 };
 
 const getCustomFields = async (
-  sp: IMetadataComplianceProps['sp'],
+  sp: IRecognitionFeedProps['sp'],
   libraryTitle: string,
   excludedFields: string[]
 ): Promise<IFieldMeta[]> => {
@@ -132,7 +132,7 @@ const getCustomFields = async (
     }));
 };
 
-const MetadataCompliance: React.FunctionComponent<IMetadataComplianceProps> = (props) => {
+const RecognitionFeed: React.FunctionComponent<IRecognitionFeedProps> = (props) => {
   const [libraries, setLibraries] = useState<ILibraryOption[]>([]);
   const [selectedLibrary, setSelectedLibrary] = useState<string>('');
   const [librariesLoading, setLibrariesLoading] = useState<boolean>(true);
@@ -431,4 +431,4 @@ const MetadataCompliance: React.FunctionComponent<IMetadataComplianceProps> = (p
   );
 };
 
-export default MetadataCompliance;
+export default RecognitionFeed;

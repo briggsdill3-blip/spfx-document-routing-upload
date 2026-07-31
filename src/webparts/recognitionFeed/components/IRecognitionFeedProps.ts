@@ -1,6 +1,6 @@
 import { SPFI } from '@pnp/sp';
 
-export interface IMetadataComplianceProps {
+export interface IRecognitionFeedProps {
   description: string;
   isDarkTheme: boolean;
   environmentMessage: string;

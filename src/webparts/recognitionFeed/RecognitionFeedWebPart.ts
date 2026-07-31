@@ -14,11 +14,11 @@ import '@pnp/sp/lists';
 import '@pnp/sp/items';
 import '@pnp/sp/fields';
 
-import * as strings from 'MetadataComplianceWebPartStrings';
-import MetadataCompliance from './components/MetadataCompliance';
-import { IMetadataComplianceProps } from './components/IMetadataComplianceProps';
+import * as strings from 'RecognitionFeedWebPartStrings';
+import RecognitionFeed from './components/RecognitionFeed';
+import { IRecognitionFeedProps } from './components/IRecognitionFeedProps';
 
-export interface IMetadataComplianceWebPartProps {
+export interface IRecognitionFeedWebPartProps {
   description: string;
   lockedLibrary: string;
   goodThreshold: string;
@@ -41,15 +41,15 @@ const parseExcludedFields = (raw: string): string[] => {
   return raw.split(',').map(f => f.trim().toLowerCase()).filter(f => f.length > 0);
 };
 
-export default class MetadataComplianceWebPart extends BaseClientSideWebPart<IMetadataComplianceWebPartProps> {
+export default class RecognitionFeedWebPart extends BaseClientSideWebPart<IRecognitionFeedWebPartProps> {
 
   private _isDarkTheme: boolean = false;
   private _environmentMessage: string = '';
   private _sp!: SPFI;
 
   public render(): void {
-    const element: React.ReactElement<IMetadataComplianceProps> = React.createElement(
-      MetadataCompliance,
+    const element: React.ReactElement<IRecognitionFeedProps> = React.createElement(
+      RecognitionFeed,
       {
         description: this.properties.description,
         isDarkTheme: this._isDarkTheme,
@@ -136,7 +136,7 @@ export default class MetadataComplianceWebPart extends BaseClientSideWebPart<IMe
   }
 
   protected get dataVersion(): Version {
-    return Version.parse('2.0');
+    return Version.parse('1.0');
   }
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
@@ -152,32 +152,6 @@ export default class MetadataComplianceWebPart extends BaseClientSideWebPart<IMe
               groupFields: [
                 PropertyPaneTextField('description', {
                   label: strings.DescriptionFieldLabel
-                }),
-                PropertyPaneTextField('lockedLibrary', {
-                  label: 'Lock to Library (exact name)',
-                  description: 'Leave blank to let users switch between any qualifying library on this site.'
-                })
-              ]
-            },
-            {
-              groupName: 'Data Source',
-              groupFields: [
-                PropertyPaneTextField('excludedFields', {
-                  label: 'Excluded Fields (comma-separated)',
-                  description: 'Metadata columns to ignore when calculating completeness, e.g. Notes, Comments'
-                })
-              ]
-            },
-            {
-              groupName: 'Compliance Thresholds',
-              groupFields: [
-                PropertyPaneTextField('goodThreshold', {
-                  label: 'On Target threshold (%)',
-                  description: 'Default 90. Percent complete at or above this is shown as green.'
-                }),
-                PropertyPaneTextField('warnThreshold', {
-                  label: 'Needs Attention threshold (%)',
-                  description: 'Default 70. Percent complete at or above this (but below target) is shown as amber.'
                 })
               ]
             }
