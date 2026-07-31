@@ -1,431 +1,292 @@
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from './RecognitionFeed.module.scss';
 import type { IRecognitionFeedProps } from './IRecognitionFeedProps';
 
-interface ILibraryOption {
-  Title: string;
-  ItemCount: number;
-}
-
-interface IFieldMeta {
-  InternalName: string;
-  Title: string;
-  TypeAsString: string;
-}
-
-interface IRawFieldResponse {
-  InternalName: string;
-  Title: string;
-  TypeAsString: string;
-  Hidden: boolean;
-  ReadOnlyField: boolean;
-  Group: string;
-}
-
-interface IDocItem {
+interface IWinnerItem {
   Id: number;
-  FileLeafRef: string;
-  values: Record<string, string>;
+  Name: string;
+  PhotoEmail: string;
+  AwardType: string;
+  Month: string;
+  Year: string;
+  Justification: string;
+  IsTeamAward: boolean;
+  TeamName: string;
+  TeamMembers: string;
 }
 
-const SYSTEM_FIELD_BLOCKLIST = new Set([
-  'ContentType', 'Created', 'Author', 'Editor', 'Modified', 'UIVersionString',
-  'Attachments', 'Edit', 'LinkTitleNoMenu', 'LinkTitle', 'DocIcon',
-  'ItemChildCount', 'FolderChildCount', 'AppAuthor', 'AppEditor',
-  'owshiddenversion', 'WorkflowVersion', 'WorkflowInstanceID',
-  'FileRef', 'FileDirRef', 'FSObjType', 'SortBehavior', 'PermMask', 'UniqueId',
-  'SyncClientId', 'ProgId', 'ScopeId', 'MetaInfo', 'InstanceID', 'Order', 'GUID',
-  'CheckedOutTitle', 'CheckedOutUserId', 'IsCheckedoutToLocal', 'VirusStatus',
-  'TemplateUrl', 'ParentVersionString', 'ParentLeafName',
-  'FileLeafRef', 'Title'
-]);
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
 
-const isFieldEmpty = (value: string): boolean => {
-  return !value || value.trim() === '';
+const monthNumberToName = (raw: string): string => {
+  const num = parseInt(raw, 10);
+  if (!isNaN(num) && num >= 1 && num <= 12) {
+    return MONTH_NAMES[num - 1];
+  }
+  return raw || '';
 };
 
-const isItemComplete = (item: IDocItem, fieldTitles: string[]): boolean => {
-  return fieldTitles.every(title => !isFieldEmpty(item.values[title]));
-};
-
-const getStatusTier = (percent: number, goodThreshold: number, warnThreshold: number): 'good' | 'warn' | 'bad' => {
-  if (percent >= goodThreshold) return 'good';
-  if (percent >= warnThreshold) return 'warn';
-  return 'bad';
-};
-
-interface IProgressRingProps {
-  percent: number;
-  tier: 'good' | 'warn' | 'bad';
-}
-
-const ProgressRing: React.FunctionComponent<IProgressRingProps> = ({ percent, tier }) => {
-  const [displayPercent, setDisplayPercent] = useState<number>(0);
-
-  useEffect(() => {
-    setDisplayPercent(0);
-    const frame1 = requestAnimationFrame(() => {
-      const frame2 = requestAnimationFrame(() => setDisplayPercent(percent));
-      return () => cancelAnimationFrame(frame2);
-    });
-    return () => cancelAnimationFrame(frame1);
-  }, [percent]);
-
-  const radius = 70;
-  const stroke = 12;
-  const normalizedRadius = radius - stroke / 2;
-  const circumference = normalizedRadius * 2 * Math.PI;
-  const offset = circumference - (displayPercent / 100) * circumference;
-
-  return (
-    <svg height={radius * 2} width={radius * 2} className={styles.ring}>
-      <circle
-        stroke="currentColor"
-        className={styles.ringTrack}
-        fill="transparent"
-        strokeWidth={stroke}
-        r={normalizedRadius}
-        cx={radius}
-        cy={radius}
-      />
-      <circle
-        stroke="currentColor"
-        className={`${styles.ringProgress} ${styles[`tier-${tier}`]}`}
-        fill="transparent"
-        strokeWidth={stroke}
-        strokeDasharray={`${circumference} ${circumference}`}
-        style={{ strokeDashoffset: offset }}
-        strokeLinecap="round"
-        r={normalizedRadius}
-        cx={radius}
-        cy={radius}
-      />
-      <text x="50%" y="50%" textAnchor="middle" dy="0.35em" className={styles.ringLabel}>
-        {percent}%
-      </text>
-    </svg>
-  );
-};
-
-const getCustomFields = async (
-  sp: IRecognitionFeedProps['sp'],
-  libraryTitle: string,
-  excludedFields: string[]
-): Promise<IFieldMeta[]> => {
-  const rawFields = await sp.web.lists.getByTitle(libraryTitle).fields
-    .select('InternalName', 'Title', 'TypeAsString', 'Hidden', 'ReadOnlyField', 'Group')
-    .filter('Hidden eq false and ReadOnlyField eq false')();
-
-  return rawFields
-    .filter((f: IRawFieldResponse) =>
-      !SYSTEM_FIELD_BLOCKLIST.has(f.InternalName) &&
-      !f.InternalName.startsWith('_') &&
-      f.Group !== '_Hidden' &&
-      f.Group !== 'Base Columns' &&
-      excludedFields.indexOf(f.Title.toLowerCase()) === -1
-    )
-    .map((f: IRawFieldResponse) => ({
-      InternalName: f.InternalName,
-      Title: f.Title,
-      TypeAsString: f.TypeAsString
-    }));
+const getPhotoUrl = (siteAbsoluteUrl: string, email: string): string => {
+  if (!email) {
+    return '';
+  }
+  const origin = new URL(siteAbsoluteUrl).origin;
+  return `${origin}/_layouts/15/userphoto.aspx?size=L&accountname=${encodeURIComponent(email)}`;
 };
 
 const RecognitionFeed: React.FunctionComponent<IRecognitionFeedProps> = (props) => {
-  const [libraries, setLibraries] = useState<ILibraryOption[]>([]);
-  const [selectedLibrary, setSelectedLibrary] = useState<string>('');
-  const [librariesLoading, setLibrariesLoading] = useState<boolean>(true);
-  const [fieldsCache, setFieldsCache] = useState<Record<string, IFieldMeta[]>>({});
-
-  const [items, setItems] = useState<IDocItem[]>([]);
-  const [dataLoading, setDataLoading] = useState<boolean>(false);
+  const [winners, setWinners] = useState<IWinnerItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
-  const [selectedType, setSelectedType] = useState<string>('All');
+  const [selectedWinner, setSelectedWinner] = useState<IWinnerItem | null>(null);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
 
-  const isLocked = props.lockedLibrary.trim().length > 0;
-  const excludedKey = props.excludedFields.join('|');
+  const scrollTrackRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const setupLockedLibrary = async (): Promise<void> => {
-      try {
-        const libTitle = props.lockedLibrary.trim();
-        const rawLib = await props.sp.web.lists.getByTitle(libTitle).select('Title', 'ItemCount')();
-        const customFields = await getCustomFields(props.sp, libTitle, props.excludedFields);
-
-        setFieldsCache({ [libTitle]: customFields });
-        setSelectedLibrary(libTitle);
-        setLibraries([{ Title: libTitle, ItemCount: rawLib.ItemCount }]);
-      } catch (err) {
-        setError(`Unable to find or read the configured library "${props.lockedLibrary}".`);
-        console.error(err);
-      } finally {
-        setLibrariesLoading(false);
-      }
-    };
-
-    const discoverLibraries = async (): Promise<void> => {
-      try {
-        const rawLibraries = await props.sp.web.lists
-          .filter('BaseTemplate eq 101 and Hidden eq false')
-          .select('Title', 'ItemCount')();
-
-        const candidateLibraries: ILibraryOption[] = rawLibraries.map((lib: ILibraryOption) => ({
-          Title: lib.Title,
-          ItemCount: lib.ItemCount
-        }));
-
-        const fieldResults = await Promise.all(
-          candidateLibraries.map(async lib => ({
-            title: lib.Title,
-            fields: await getCustomFields(props.sp, lib.Title, props.excludedFields)
-          }))
-        );
-
-        const cache: Record<string, IFieldMeta[]> = {};
-        fieldResults.forEach(r => { cache[r.title] = r.fields; });
-        setFieldsCache(cache);
-
-        const qualifyingLibraries = candidateLibraries
-          .filter(lib => cache[lib.Title] && cache[lib.Title].length > 0)
-          .sort((a, b) => a.Title.localeCompare(b.Title));
-
-        setLibraries(qualifyingLibraries);
-
-        const defaultLib = qualifyingLibraries.some(l => l.Title === 'Documents')
-          ? 'Documents'
-          : (qualifyingLibraries[0] ? qualifyingLibraries[0].Title : '');
-
-        setSelectedLibrary(defaultLib);
-      } catch (err) {
-        setError('Unable to load document libraries for this site.');
-        console.error(err);
-      } finally {
-        setLibrariesLoading(false);
-      }
-    };
-
-    setLibrariesLoading(true);
-    if (isLocked) {
-      setupLockedLibrary().catch((err) => console.error(err));
-    } else {
-      discoverLibraries().catch((err) => console.error(err));
-    }
-  }, [props.sp, props.lockedLibrary, excludedKey]);
+  const fieldsConfigured =
+    props.listId &&
+    props.fieldName &&
+    props.fieldPhotoEmail &&
+    props.fieldAwardType &&
+    props.fieldMonth &&
+    props.fieldYear &&
+    props.fieldJustification;
 
   useEffect(() => {
-    if (!selectedLibrary || !fieldsCache[selectedLibrary]) {
+    if (!fieldsConfigured) {
+      setLoading(false);
       return;
     }
 
-    const loadItems = async (): Promise<void> => {
-      setDataLoading(true);
+    const loadWinners = async (): Promise<void> => {
+      setLoading(true);
       setError('');
-      setSelectedType('All');
-
-      const libraryFields = fieldsCache[selectedLibrary];
 
       try {
-        const selectList = ['Id', 'FileLeafRef', ...libraryFields.map(f =>
-          f.TypeAsString === 'User' ? `${f.InternalName}/Title` : f.InternalName
-        )];
-        const expandList = libraryFields.filter(f => f.TypeAsString === 'User').map(f => f.InternalName);
+        const selectFields = [
+          'Id',
+          `${props.fieldName}`,
+          `${props.fieldPhotoEmail}/EMail`,
+          `${props.fieldPhotoEmail}/Title`,
+          `${props.fieldAwardType}`,
+          `${props.fieldMonth}`,
+          `${props.fieldYear}`,
+          `${props.fieldJustification}`
+        ];
 
-        let query = props.sp.web.lists.getByTitle(selectedLibrary).items
-          .select(...selectList)
-          .top(5000);
-
-        if (expandList.length > 0) {
-          query = query.expand(...expandList);
+        if (props.fieldTeamFlag) {
+          selectFields.push(props.fieldTeamFlag);
+        }
+        if (props.fieldTeamName) {
+          selectFields.push(props.fieldTeamName);
+        }
+        if (props.fieldTeamMembers) {
+          selectFields.push(props.fieldTeamMembers);
         }
 
-        const rawItems = await query();
+        const rawItems = await props.sp.web.lists.getById(props.listId).items
+          .select(...selectFields)
+          .expand(props.fieldPhotoEmail)
+          .orderBy(props.fieldYear, false)
+          .orderBy(props.fieldMonth, false)
+          .top(props.monthsToShow * 4)();
 
-        const mapped: IDocItem[] = rawItems.map((raw: Record<string, unknown>) => {
-          const values: Record<string, string> = {};
-          libraryFields.forEach(f => {
-            const rawUserValue = raw[f.InternalName] as { Title?: string } | undefined;
-            const rawValue = f.TypeAsString === 'User'
-              ? (rawUserValue && rawUserValue.Title ? rawUserValue.Title : '')
-              : (raw[f.InternalName] as string | string[] | undefined);
+        const mapped: IWinnerItem[] = rawItems.map((raw: Record<string, unknown>) => {
+          const photoField = raw[props.fieldPhotoEmail] as { EMail?: string; Title?: string } | undefined;
 
-            if (Array.isArray(rawValue)) {
-              values[f.Title] = rawValue.join(', ');
-            } else {
-              values[f.Title] = rawValue || '';
-            }
-          });
+          const isTeam = props.fieldTeamFlag
+            ? !!raw[props.fieldTeamFlag]
+            : false;
 
           return {
             Id: raw.Id as number,
-            FileLeafRef: raw.FileLeafRef as string,
-            values
+            Name: (raw[props.fieldName] as string) || '',
+            PhotoEmail: photoField && photoField.EMail ? photoField.EMail : '',
+            AwardType: (raw[props.fieldAwardType] as string) || '',
+            Month: monthNumberToName((raw[props.fieldMonth] as string) || ''),
+            Year: (raw[props.fieldYear] as string) || '',
+            Justification: (raw[props.fieldJustification] as string) || '',
+            IsTeamAward: isTeam,
+            TeamName: props.fieldTeamName ? ((raw[props.fieldTeamName] as string) || '') : '',
+            TeamMembers: props.fieldTeamMembers ? ((raw[props.fieldTeamMembers] as string) || '') : ''
           };
         });
 
-        setItems(mapped);
+        // Limit to the requested number of months worth of winners.
+        // Assumes roughly 2 winners per month (Critical Cog + Employee of the Month);
+        // if that ratio changes, this cap may need to be exposed as its own property later.
+        const capped = mapped.slice(0, props.monthsToShow * 2);
+        setWinners(capped);
       } catch (err) {
-        setError(`Unable to load data from "${selectedLibrary}".`);
+        setError('Unable to load recognition data. Check the Data Source and Field Mapping settings.');
         console.error(err);
       } finally {
-        setDataLoading(false);
+        setLoading(false);
       }
     };
 
-    loadItems().catch((err) => console.error(err));
-  }, [props.sp, selectedLibrary, fieldsCache]);
+    loadWinners().catch((err) => console.error(err));
+  }, [props.sp, props.listId, props.fieldName, props.fieldPhotoEmail, props.fieldAwardType, props.fieldMonth, props.fieldYear, props.fieldJustification, props.fieldTeamFlag, props.fieldTeamName, props.fieldTeamMembers, props.monthsToShow]);
 
-  const currentFields = fieldsCache[selectedLibrary] || [];
-  const keyFieldTitles = currentFields.map(f => f.Title);
+  const isCurrentMonth = (item: IWinnerItem, index: number): boolean => {
+    // The first 1-2 items (most recent, since sorted descending) are treated as "new"
+    return index < 2;
+  };
 
-  const typeField = currentFields.find(f => f.Title.toLowerCase().includes('type'));
-  const documentTypes = typeField
-    ? ['All', ...Array.from(new Set(items.map(i => i.values[typeField.Title]).filter(t => t !== '')))]
-    : ['All'];
+  const scrollAnimationDuration = props.scrollSpeed === 'slow' ? '60s' : props.scrollSpeed === 'medium' ? '30s' : '0s';
+  const scrollDirectionValue = props.scrollDirection === 'right' ? 'reverse' : 'normal';
 
-  const filteredItems = (!typeField || selectedType === 'All')
-    ? items
-    : items.filter(i => i.values[typeField.Title] === selectedType);
-
-  const totalCount = filteredItems.length;
-  const completeCount = filteredItems.filter(i => isItemComplete(i, keyFieldTitles)).length;
-  const incompleteCount = totalCount - completeCount;
-  const completionPercent = totalCount === 0 ? 0 : Math.round((completeCount / totalCount) * 100);
-  const tier = getStatusTier(completionPercent, props.goodThreshold, props.warnThreshold);
-
-  const missingByField = keyFieldTitles.reduce((acc, title) => {
-    acc[title] = filteredItems.filter(i => isFieldEmpty(i.values[title])).length;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const maxMissing = Math.max(1, ...keyFieldTitles.map(t => missingByField[t]));
-  const isBusy = librariesLoading || dataLoading;
-
-  if (librariesLoading) {
+  if (loading) {
     return (
-      <section className={`${styles.metadataCompliance} ${props.isDarkTheme ? styles.dark : ''}`}>
+      <section className={`${styles.recognitionFeed} ${props.isDarkTheme ? styles.dark : ''}`}>
         <div className={styles.loadingState}>
           <div className={styles.spinner} />
-          <span>Discovering document libraries...</span>
+          <span>Loading recognition feed...</span>
         </div>
       </section>
     );
   }
 
-  if (libraries.length === 0 && !error) {
+  if (!fieldsConfigured) {
     return (
-      <section className={`${styles.metadataCompliance} ${props.isDarkTheme ? styles.dark : ''}`}>
+      <section className={`${styles.recognitionFeed} ${props.isDarkTheme ? styles.dark : ''}`}>
         <div className={styles.errorState}>
-          No document libraries with custom metadata columns were found on this site.
+          This web part needs to be configured. Open the edit panel and set the Data Source and Field Mapping options.
         </div>
       </section>
     );
   }
+
+  if (error) {
+    return (
+      <section className={`${styles.recognitionFeed} ${props.isDarkTheme ? styles.dark : ''}`}>
+        <div className={styles.errorState}>{error}</div>
+      </section>
+    );
+  }
+
+  if (winners.length === 0) {
+    return (
+      <section className={`${styles.recognitionFeed} ${props.isDarkTheme ? styles.dark : ''}`}>
+        <div className={styles.emptyState}>No recognition data found yet.</div>
+      </section>
+    );
+  }
+
+  // Duplicate the list once so the CSS animation can loop seamlessly.
+  const loopedWinners = [...winners, ...winners];
 
   return (
-    <section className={`${styles.metadataCompliance} ${props.isDarkTheme ? styles.dark : ''}`}>
-      <header className={styles.header}>
-        <div>
-          <h2 className={styles.title}>Metadata Compliance Dashboard</h2>
-          <p className={styles.subtitle}>Tagging health for this document library</p>
-        </div>
-        <div className={styles.filterGroup}>
-          {!isLocked && (
-            <div className={styles.filterControl}>
-              <label htmlFor="libraryFilter" className={styles.filterLabel}>Library</label>
-              <select
-                id="libraryFilter"
-                className={styles.select}
-                value={selectedLibrary}
-                onChange={(e) => setSelectedLibrary(e.target.value)}
-              >
-                {libraries.map(lib => (
-                  <option key={lib.Title} value={lib.Title}>
-                    {lib.Title} ({lib.ItemCount})
-                  </option>
-                ))}
-              </select>
-            </div>
+    <section className={`${styles.recognitionFeed} ${props.isDarkTheme ? styles.dark : ''}`}>
+      <div className={styles.header}>
+        <h2 className={styles.title}>Recent Recognition</h2>
+        <button
+          type="button"
+          className={styles.pauseButton}
+          onClick={() => setIsPaused(!isPaused)}
+          aria-label={isPaused ? 'Play scrolling' : 'Pause scrolling'}
+        >
+          {isPaused ? '▶' : '❚❚'}
+        </button>
+      </div>
+
+      <div className={styles.scrollViewport}>
+        <div
+          ref={scrollTrackRef}
+          className={styles.scrollTrack}
+          style={{
+            animationPlayState: isPaused ? 'paused' : 'running',
+            animationDuration: scrollAnimationDuration,
+            animationDirection: scrollDirectionValue
+          }}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
+          {loopedWinners.map((winner, index) => (
+            <button
+              type="button"
+              key={`${winner.Id}-${index}`}
+              className={`${styles.card} ${isCurrentMonth(winner, index % winners.length) ? styles.newCard : ''}`}
+              onClick={() => setSelectedWinner(winner)}
+            >
+              {winner.PhotoEmail && (
+                <img
+                  className={styles.cardPhoto}
+                  src={getPhotoUrl(props.siteAbsoluteUrl, winner.PhotoEmail)}
+                  alt=""
+                />
+              )}
+              <div className={styles.cardBody}>
+                <span className={styles.cardName}>
+                  {winner.IsTeamAward && winner.TeamName ? winner.TeamName : winner.Name}
+                </span>
+                <span className={`${styles.cardBadge} ${winner.AwardType.toLowerCase().includes('critical') ? styles.badgeCriticalCog : styles.badgeEmployee}`}>
+                  {winner.AwardType}
+                </span>
+                <span className={styles.cardMonth}>{winner.Month} {winner.Year}</span>
+              </div>
+              {isCurrentMonth(winner, index % winners.length) && (
+                <span className={styles.newBadge}>New</span>
+              )}
+            </button>
+          ))}
+
+          {props.nominateUrl && (
+            
+              href={props.nominateUrl}
+              target="_blank"
+              rel="noreferrer"
+              className={`${styles.card} ${styles.nominateCard}`}
+            >
+              <span className={styles.nominateText}>Know someone who deserves recognition?</span>
+              <span className={styles.nominateCta}>Nominate Them →</span>
+            </a>
           )}
-
-          {typeField && (
-            <div className={styles.filterControl}>
-              <label htmlFor="typeFilter" className={styles.filterLabel}>{typeField.Title}</label>
-              <select
-                id="typeFilter"
-                className={styles.select}
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                disabled={isBusy || items.length === 0}
-              >
-                {documentTypes.map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
-      </header>
+      </div>
 
-      {isBusy && (
-        <div className={styles.loadingState}>
-          <div className={styles.spinner} />
-          <span>Loading library data...</span>
+      {selectedWinner && (
+        <div className={styles.overlayBackdrop} onClick={() => setSelectedWinner(null)}>
+          <div className={styles.overlayCard} onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className={styles.overlayClose}
+              onClick={() => setSelectedWinner(null)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+
+            {selectedWinner.PhotoEmail && (
+              <img
+                className={styles.overlayPhoto}
+                src={getPhotoUrl(props.siteAbsoluteUrl, selectedWinner.PhotoEmail)}
+                alt=""
+              />
+            )}
+
+            <h3 className={styles.overlayName}>
+              {selectedWinner.IsTeamAward && selectedWinner.TeamName ? selectedWinner.TeamName : selectedWinner.Name}
+            </h3>
+
+            <span className={`${styles.cardBadge} ${selectedWinner.AwardType.toLowerCase().includes('critical') ? styles.badgeCriticalCog : styles.badgeEmployee}`}>
+              {selectedWinner.AwardType}
+            </span>
+
+            <p className={styles.overlayMonth}>{selectedWinner.Month} {selectedWinner.Year}</p>
+
+            {selectedWinner.IsTeamAward && selectedWinner.TeamMembers && (
+              <p className={styles.overlayTeamMembers}>
+                <strong>Team Members:</strong> {selectedWinner.TeamMembers}
+              </p>
+            )}
+
+            <p className={styles.overlayJustification}>{selectedWinner.Justification}</p>
+          </div>
         </div>
-      )}
-
-      {!isBusy && error && (
-        <div className={styles.errorState}>{error}</div>
-      )}
-
-      {!isBusy && !error && (
-        <>
-          <div className={styles.summaryRow}>
-            <div className={styles.ringCard}>
-              <ProgressRing percent={completionPercent} tier={tier} />
-              <span className={`${styles.tierBadge} ${styles[`tier-${tier}`]}`}>
-                {tier === 'good' ? 'On Target' : tier === 'warn' ? 'Needs Attention' : 'At Risk'}
-              </span>
-            </div>
-
-            <div className={styles.statCards}>
-              <div className={styles.statCard}>
-                <span className={styles.statValue}>{totalCount}</span>
-                <span className={styles.statLabel}>Total Items</span>
-              </div>
-              <div className={`${styles.statCard} ${styles.statGood}`}>
-                <span className={styles.statValue}>{completeCount}</span>
-                <span className={styles.statLabel}>Fully Tagged</span>
-              </div>
-              <div className={`${styles.statCard} ${styles.statBad}`}>
-                <span className={styles.statValue}>{incompleteCount}</span>
-                <span className={styles.statLabel}>Incomplete Items</span>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.breakdown}>
-            <h3 className={styles.breakdownTitle}>Missing Fields Breakdown</h3>
-            <div className={styles.barList}>
-              {keyFieldTitles.map(title => {
-                const missing = missingByField[title];
-                const widthPercent = (missing / maxMissing) * 100;
-                return (
-                  <div className={styles.barRow} key={title}>
-                    <span className={styles.barLabel}>{title}</span>
-                    <div className={styles.barTrack}>
-                      <div
-                        className={styles.barFill}
-                        style={{ width: `${widthPercent}%` }}
-                      />
-                    </div>
-                    <span className={styles.barCount}>{missing}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </>
       )}
     </section>
   );

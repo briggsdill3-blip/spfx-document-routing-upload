@@ -3,7 +3,8 @@ import * as ReactDom from 'react-dom';
 import { Version } from '@microsoft/sp-core-library';
 import {
   type IPropertyPaneConfiguration,
-  PropertyPaneTextField
+  PropertyPaneTextField,
+  PropertyPaneDropdown
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
@@ -14,31 +15,37 @@ import '@pnp/sp/lists';
 import '@pnp/sp/items';
 import '@pnp/sp/fields';
 
+import { PropertyFieldListPicker, PropertyFieldListPickerOrderBy } from '@pnp/spfx-property-controls/lib/PropertyFieldListPicker';
+import { PropertyFieldColumnPicker, PropertyFieldColumnPickerOrderBy, IColumnReturnProperty } from '@pnp/spfx-property-controls/lib/PropertyFieldColumnPicker';
+
 import * as strings from 'RecognitionFeedWebPartStrings';
 import RecognitionFeed from './components/RecognitionFeed';
 import { IRecognitionFeedProps } from './components/IRecognitionFeedProps';
 
 export interface IRecognitionFeedWebPartProps {
   description: string;
-  lockedLibrary: string;
-  goodThreshold: string;
-  warnThreshold: string;
-  excludedFields: string;
+  listId: string;
+  fieldName: string;
+  fieldPhotoEmail: string;
+  fieldAwardType: string;
+  fieldMonth: string;
+  fieldYear: string;
+  fieldJustification: string;
+  fieldTeamFlag: string;
+  fieldTeamName: string;
+  fieldTeamMembers: string;
+  monthsToShow: string;
+  scrollSpeed: string;
+  scrollDirection: string;
+  nominateUrl: string;
 }
 
-const parseThreshold = (raw: string, fallback: number): number => {
+const parseMonthsToShow = (raw: string): number => {
   const parsed = parseInt(raw, 10);
-  if (isNaN(parsed) || parsed < 0 || parsed > 100) {
-    return fallback;
+  if (isNaN(parsed) || parsed < 1) {
+    return 5;
   }
   return parsed;
-};
-
-const parseExcludedFields = (raw: string): string[] => {
-  if (!raw) {
-    return [];
-  }
-  return raw.split(',').map(f => f.trim().toLowerCase()).filter(f => f.length > 0);
 };
 
 export default class RecognitionFeedWebPart extends BaseClientSideWebPart<IRecognitionFeedWebPartProps> {
@@ -56,10 +63,21 @@ export default class RecognitionFeedWebPart extends BaseClientSideWebPart<IRecog
         environmentMessage: this._environmentMessage,
         userDisplayName: this.context.pageContext.user.displayName,
         sp: this._sp,
-        lockedLibrary: this.properties.lockedLibrary || '',
-        goodThreshold: parseThreshold(this.properties.goodThreshold, 90),
-        warnThreshold: parseThreshold(this.properties.warnThreshold, 70),
-        excludedFields: parseExcludedFields(this.properties.excludedFields)
+        siteAbsoluteUrl: this.context.pageContext.web.absoluteUrl,
+        listId: this.properties.listId || '',
+        fieldName: this.properties.fieldName || '',
+        fieldPhotoEmail: this.properties.fieldPhotoEmail || '',
+        fieldAwardType: this.properties.fieldAwardType || '',
+        fieldMonth: this.properties.fieldMonth || '',
+        fieldYear: this.properties.fieldYear || '',
+        fieldJustification: this.properties.fieldJustification || '',
+        fieldTeamFlag: this.properties.fieldTeamFlag || '',
+        fieldTeamName: this.properties.fieldTeamName || '',
+        fieldTeamMembers: this.properties.fieldTeamMembers || '',
+        monthsToShow: parseMonthsToShow(this.properties.monthsToShow),
+        scrollSpeed: (this.properties.scrollSpeed as 'slow' | 'medium' | 'off') || 'slow',
+        scrollDirection: (this.properties.scrollDirection as 'left' | 'right') || 'left',
+        nominateUrl: this.properties.nominateUrl || ''
       }
     );
 
@@ -73,8 +91,6 @@ export default class RecognitionFeedWebPart extends BaseClientSideWebPart<IRecog
       this._environmentMessage = message;
     });
   }
-
-
 
   private _getEnvironmentMessage(): Promise<string> {
     if (!!this.context.sdks.microsoftTeams) {
@@ -95,40 +111,17 @@ export default class RecognitionFeedWebPart extends BaseClientSideWebPart<IRecog
             default:
               environmentMessage = strings.UnknownEnvironment;
           }
-
           return environmentMessage;
         });
     }
-
     return Promise.resolve(this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentSharePoint : strings.AppSharePointEnvironment);
   }
 
   protected onThemeChanged(currentTheme: IReadonlyTheme | undefined): void {
-    if (!currentTheme || !this.domElement) {
+    if (!currentTheme) {
       return;
     }
-
     this._isDarkTheme = !!currentTheme.isInverted;
-
-    const { semanticColors, palette } = currentTheme;
-
-    if (semanticColors) {
-      this.domElement.style.setProperty('--bodyText', semanticColors.bodyText || null);
-      this.domElement.style.setProperty('--link', semanticColors.link || null);
-      this.domElement.style.setProperty('--linkHovered', semanticColors.linkHovered || null);
-
-      this.domElement.style.setProperty('--mcd-page-bg', semanticColors.bodyBackground || null);
-      this.domElement.style.setProperty('--mcd-card-bg', semanticColors.cardStandoutBackground || semanticColors.bodyBackground || null);
-      this.domElement.style.setProperty('--mcd-text', semanticColors.bodyText || null);
-      this.domElement.style.setProperty('--mcd-text-secondary', semanticColors.bodySubtext || null);
-      this.domElement.style.setProperty('--mcd-border', semanticColors.bodyDivider || null);
-    }
-
-    if (palette) {
-      this.domElement.style.setProperty('--mcd-accent', palette.themePrimary || null);
-      this.domElement.style.setProperty('--mcd-accent-dark', palette.themeDarkAlt || null);
-      this.domElement.style.setProperty('--mcd-accent-light', palette.themeLighter || null);
-    }
   }
 
   protected onDispose(): void {
@@ -140,6 +133,20 @@ export default class RecognitionFeedWebPart extends BaseClientSideWebPart<IRecog
   }
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
+    const columnPickerProps = {
+      context: this.context,
+      listId: this.properties.listId,
+      disabled: !this.properties.listId,
+      orderBy: PropertyFieldColumnPickerOrderBy.Title,
+      onPropertyChange: this.onPropertyPaneFieldChanged.bind(this),
+      properties: this.properties,
+      onGetErrorMessage: null,
+      deferredValidationTime: 0,
+      multiSelect: false,
+      displayHiddenColumns: false,
+      columnReturnProperty: IColumnReturnProperty['Internal Name']
+    };
+
     return {
       pages: [
         {
@@ -148,10 +155,68 @@ export default class RecognitionFeedWebPart extends BaseClientSideWebPart<IRecog
           },
           groups: [
             {
-              groupName: strings.BasicGroupName,
+              groupName: 'Data Source',
               groupFields: [
-                PropertyPaneTextField('description', {
-                  label: strings.DescriptionFieldLabel
+                PropertyFieldListPicker('listId', {
+                  label: 'List',
+                  selectedList: this.properties.listId,
+                  includeHidden: false,
+                  orderBy: PropertyFieldListPickerOrderBy.Title,
+                  disabled: false,
+                  onPropertyChange: this.onPropertyPaneFieldChanged.bind(this),
+                  properties: this.properties,
+                  context: this.context,
+                  onGetErrorMessage: null,
+                  deferredValidationTime: 0,
+                  key: 'listPickerFieldId'
+                })
+              ]
+            },
+            {
+              groupName: 'Field Mapping',
+              groupFields: [
+                PropertyFieldColumnPicker('fieldName', { ...columnPickerProps, label: 'Name field', selectedColumn: this.properties.fieldName, key: 'fieldNameId' }),
+                PropertyFieldColumnPicker('fieldPhotoEmail', { ...columnPickerProps, label: 'Photo/Email field', selectedColumn: this.properties.fieldPhotoEmail, key: 'fieldPhotoEmailId' }),
+                PropertyFieldColumnPicker('fieldAwardType', { ...columnPickerProps, label: 'Award Type field', selectedColumn: this.properties.fieldAwardType, key: 'fieldAwardTypeId' }),
+                PropertyFieldColumnPicker('fieldMonth', { ...columnPickerProps, label: 'Month field', selectedColumn: this.properties.fieldMonth, key: 'fieldMonthId' }),
+                PropertyFieldColumnPicker('fieldYear', { ...columnPickerProps, label: 'Year field', selectedColumn: this.properties.fieldYear, key: 'fieldYearId' }),
+                PropertyFieldColumnPicker('fieldJustification', { ...columnPickerProps, label: 'Justification field', selectedColumn: this.properties.fieldJustification, key: 'fieldJustificationId' }),
+                PropertyFieldColumnPicker('fieldTeamFlag', { ...columnPickerProps, label: 'Team Award flag field', selectedColumn: this.properties.fieldTeamFlag, key: 'fieldTeamFlagId' }),
+                PropertyFieldColumnPicker('fieldTeamName', { ...columnPickerProps, label: 'Team Name field', selectedColumn: this.properties.fieldTeamName, key: 'fieldTeamNameId' }),
+                PropertyFieldColumnPicker('fieldTeamMembers', { ...columnPickerProps, label: 'Team Members field', selectedColumn: this.properties.fieldTeamMembers, key: 'fieldTeamMembersId' })
+              ]
+            },
+            {
+              groupName: 'Display Settings',
+              groupFields: [
+                PropertyPaneTextField('monthsToShow', {
+                  label: 'Number of months to show',
+                  description: 'Default 5'
+                }),
+                PropertyPaneDropdown('scrollSpeed', {
+                  label: 'Auto-scroll speed',
+                  options: [
+                    { key: 'slow', text: 'Slow' },
+                    { key: 'medium', text: 'Medium' },
+                    { key: 'off', text: 'Off' }
+                  ],
+                  selectedKey: this.properties.scrollSpeed || 'slow'
+                }),
+                PropertyPaneDropdown('scrollDirection', {
+                  label: 'Scroll direction',
+                  options: [
+                    { key: 'left', text: 'Left' },
+                    { key: 'right', text: 'Right' }
+                  ],
+                  selectedKey: this.properties.scrollDirection || 'left'
+                })
+              ]
+            },
+            {
+              groupName: 'Nominate',
+              groupFields: [
+                PropertyPaneTextField('nominateUrl', {
+                  label: 'Nomination form URL'
                 })
               ]
             }
