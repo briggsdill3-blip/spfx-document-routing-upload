@@ -14,6 +14,7 @@ export interface ISiteEntryChipInputFieldProps {
 }
 
 interface IInternalProperties extends ISiteEntryChipInputFieldProps {
+  key: string;
   onRender: (elem: HTMLElement) => void;
   onDispose: (elem: HTMLElement) => void;
 }
@@ -29,6 +30,7 @@ class SiteEntryChipInputField implements IPropertyPaneField<IInternalProperties>
     this._originalProps = properties;
     this.properties = {
       ...properties,
+      key: `${targetProperty}-siteEntryChipInput`,
       onRender: this._onRender.bind(this),
       onDispose: this._onDispose.bind(this)
     };
