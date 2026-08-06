@@ -201,6 +201,18 @@
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
+.staleFlag {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background-color: var(--scix-error-bg, rgba(163, 61, 61, 0.15));
+  color: var(--scix-error-text, #C86A6A);
+}
 
 @keyframes spin {
   to { transform: rotate(360deg); }
