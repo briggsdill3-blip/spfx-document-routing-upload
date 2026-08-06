@@ -1,7 +1,11 @@
-declare interface IRecognitionFeedWebPartStrings {
+declare interface ISiteContentIndexWebPartStrings {
   PropertyPaneDescription: string;
   BasicGroupName: string;
   DescriptionFieldLabel: string;
+  ConfigurationGroupName: string;
+  TargetSitesFieldLabel: string;
+  IncludeSystemListsFieldLabel: string;
+  GroupBySiteFieldLabel: string;
   AppLocalEnvironmentSharePoint: string;
   AppLocalEnvironmentTeams: string;
   AppLocalEnvironmentOffice: string;
@@ -13,7 +17,7 @@ declare interface IRecognitionFeedWebPartStrings {
   UnknownEnvironment: string;
 }
 
-declare module 'RecognitionFeedWebPartStrings' {
-  const strings: IRecognitionFeedWebPartStrings;
+declare module 'SiteContentIndexWebPartStrings' {
+  const strings: ISiteContentIndexWebPartStrings;
   export = strings;
 }
