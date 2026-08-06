@@ -35,6 +35,10 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
   private _sp!: SPFI;
 
   public render(): void {
+    if (!this._sp) {
+      return;
+    }
+
     const element: React.ReactElement<ISiteContentIndexProps> = React.createElement(
       SiteContentIndex,
       {
@@ -90,7 +94,6 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
       return;
     }
     this._theme = currentTheme;
-    this.render();
   }
 
   protected onDispose(): void {
