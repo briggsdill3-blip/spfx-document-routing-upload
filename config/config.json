@@ -2,17 +2,17 @@
   "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
   "version": "2.0",
   "bundles": {
-    "recognition-feed-web-part": {
+    "site-content-index-web-part": {
       "components": [
         {
-          "entrypoint": "./lib/webparts/recognitionFeed/RecognitionFeedWebPart.js",
-          "manifest": "./src/webparts/recognitionFeed/RecognitionFeedWebPart.manifest.json"
+          "entrypoint": "./lib/webparts/siteContentIndex/SiteContentIndexWebPart.js",
+          "manifest": "./src/webparts/siteContentIndex/SiteContentIndexWebPart.manifest.json"
         }
       ]
     }
   },
   "externals": {},
   "localizedResources": {
-    "RecognitionFeedWebPartStrings": "lib/webparts/recognitionFeed/loc/{locale}.js"
+    "SiteContentIndexWebPartStrings": "lib/webparts/siteContentIndex/loc/{locale}.js"
   }
 }
