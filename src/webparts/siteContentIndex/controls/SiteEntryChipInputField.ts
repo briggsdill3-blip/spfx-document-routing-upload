@@ -15,17 +15,28 @@ export interface ISiteEntryChipInputFieldProps {
   onChanged: (targetProperty: string, entries: ISiteEntry[]) => void;
 }
 
-class SiteEntryChipInputField implements IPropertyPaneField<ISiteEntryChipInputFieldProps> {
+interface IInternalProperties extends ISiteEntryChipInputFieldProps {
+  onRender: (elem: HTMLElement) => void;
+  onDispose: (elem: HTMLElement) => void;
+}
+
+class SiteEntryChipInputField implements IPropertyPaneField<IInternalProperties> {
   public type: PropertyPaneFieldType = PropertyPaneFieldType.Custom;
   public targetProperty: string;
-  public properties: ISiteEntryChipInputFieldProps;
+  public properties: IInternalProperties;
+  private _originalProps: ISiteEntryChipInputFieldProps;
 
   constructor(targetProperty: string, properties: ISiteEntryChipInputFieldProps) {
     this.targetProperty = targetProperty;
-    this.properties = properties;
+    this._originalProps = properties;
+    this.properties = {
+      ...properties,
+      onRender: this._onRender.bind(this),
+      onDispose: this._onDispose.bind(this)
+    };
   }
 
-  public render(elem: HTMLElement): void {
+  private _onRender(elem: HTMLElement): void {
     if (!elem) {
       return;
     }
@@ -33,7 +44,7 @@ class SiteEntryChipInputField implements IPropertyPaneField<ISiteEntryChipInputF
     elem.innerHTML = '';
 
     const labelElem = document.createElement('div');
-    labelElem.textContent = this.properties.label || 'Target Sites';
+    labelElem.textContent = this._originalProps.label || 'Target Sites';
     labelElem.style.fontWeight = '600';
     labelElem.style.fontSize = '14px';
     labelElem.style.marginBottom = '6px';
@@ -43,20 +54,25 @@ class SiteEntryChipInputField implements IPropertyPaneField<ISiteEntryChipInputF
     elem.appendChild(controlContainer);
 
     const element: React.ReactElement<ISiteEntryChipInputProps> = React.createElement(SiteEntryChipInput, {
-      entries: this.properties.entries,
+      entries: this._originalProps.entries,
       onChange: (entries: ISiteEntry[]) => {
-        this.properties.entries = entries;
-        this.properties.onChanged(this.targetProperty, entries);
+        this._originalProps.onChanged(this.targetProperty, entries);
       }
     });
 
     ReactDom.render(element, controlContainer);
+  }
+
+  private _onDispose(elem: HTMLElement): void {
+    if (elem) {
+      ReactDom.unmountComponentAtNode(elem);
+    }
   }
 }
 
 export function PropertyPaneSiteEntryChipInput(
   targetProperty: string,
   properties: ISiteEntryChipInputFieldProps
-): IPropertyPaneField<ISiteEntryChipInputFieldProps> {
+): IPropertyPaneField<IInternalProperties> {
   return new SiteEntryChipInputField(targetProperty, properties);
 }
