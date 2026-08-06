@@ -185,6 +185,10 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
     '--scix-error-text': themeColors.errorText || '#C86A6A'
   } as React.CSSProperties) : {};
 
+  const displayTitle = props.customTitle && props.customTitle.trim().length > 0
+    ? props.customTitle
+    : 'Site Content Index';
+
   const renderListRow = (list: IListItem, showSite: boolean, siteTitle: string): JSX.Element => (
     <tr key={`${siteTitle}-${list.Id}`} className={styles.row}>
       {showSite && <td className={styles.cellSite}>{siteTitle}</td>}
@@ -236,7 +240,7 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
   return (
     <section className={styles.siteContentIndex} style={rootStyle}>
       <div className={styles.header}>
-        <h2 className={styles.title}>Site Content Index</h2>
+        {props.showTitle && <h2 className={styles.title}>{displayTitle}</h2>}
         <input
           type="text"
           className={styles.searchBox}

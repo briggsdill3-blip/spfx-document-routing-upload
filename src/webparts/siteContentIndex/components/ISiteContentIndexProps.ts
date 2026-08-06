@@ -12,4 +12,6 @@ export interface ISiteContentIndexProps {
   groupBySite: boolean;
   onlyUniquePermissions: boolean;
   staleDaysThreshold: number;
+  showTitle: boolean;
+  customTitle: string;
 }

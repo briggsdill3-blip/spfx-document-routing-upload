@@ -8,6 +8,9 @@ declare interface ISiteContentIndexWebPartStrings {
   GroupBySiteFieldLabel: string;
   OnlyUniquePermissionsFieldLabel: string;
   StaleDaysThresholdFieldLabel: string;
+  TitleGroupName: string;
+  ShowTitleFieldLabel: string;
+  CustomTitleFieldLabel: string;
   AppLocalEnvironmentSharePoint: string;
   AppLocalEnvironmentTeams: string;
   AppLocalEnvironmentOffice: string;

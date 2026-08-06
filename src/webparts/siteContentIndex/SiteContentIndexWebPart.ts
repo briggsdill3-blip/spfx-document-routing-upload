@@ -27,6 +27,8 @@ export interface ISiteContentIndexWebPartProps {
   groupBySite: boolean;
   onlyUniquePermissions: boolean;
   staleDaysThreshold: string;
+  showTitle: boolean;
+  customTitle: string;
 }
 
 const parseStaleDays = (raw: string): number => {
@@ -60,7 +62,9 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
         includeSystemLists: this.properties.includeSystemLists || false,
         groupBySite: this.properties.groupBySite !== undefined ? this.properties.groupBySite : true,
         onlyUniquePermissions: this.properties.onlyUniquePermissions || false,
-        staleDaysThreshold: parseStaleDays(this.properties.staleDaysThreshold)
+        staleDaysThreshold: parseStaleDays(this.properties.staleDaysThreshold),
+        showTitle: this.properties.showTitle !== undefined ? this.properties.showTitle : true,
+        customTitle: this.properties.customTitle || ''
       }
     );
 
@@ -158,6 +162,21 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
                 PropertyPaneTextField('staleDaysThreshold', {
                   label: strings.StaleDaysThresholdFieldLabel,
                   description: 'Flag libraries not modified within this many days. Leave blank or 0 to disable.'
+                })
+              ]
+            },
+            {
+              groupName: strings.TitleGroupName,
+              groupFields: [
+                PropertyPaneToggle('showTitle', {
+                  label: strings.ShowTitleFieldLabel,
+                  onText: 'Shown',
+                  offText: 'Hidden'
+                }),
+                PropertyPaneTextField('customTitle', {
+                  label: strings.CustomTitleFieldLabel,
+                  description: 'Leave blank to use the default: Site Content Index',
+                  disabled: !this.properties.showTitle
                 })
               ]
             }
