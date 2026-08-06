@@ -18,17 +18,19 @@ import '@pnp/sp/fields';
 import * as strings from 'SiteContentIndexWebPartStrings';
 import SiteContentIndex from './components/SiteContentIndex';
 import { ISiteContentIndexProps } from './components/ISiteContentIndexProps';
+import { ISiteEntry } from './components/ISiteEntry';
+import { PropertyPaneSiteEntryChipInput } from './controls/SiteEntryChipInputField';
 
 export interface ISiteContentIndexWebPartProps {
   description: string;
-  targetSites: string;
+  targetSites: ISiteEntry[];
   includeSystemLists: boolean;
   groupBySite: boolean;
 }
 
 export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISiteContentIndexWebPartProps> {
 
-  private _isDarkTheme: boolean = false;
+  private _theme: IReadonlyTheme | undefined;
   private _environmentMessage: string = '';
   private _sp!: SPFI;
 
@@ -37,11 +39,11 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
       SiteContentIndex,
       {
         description: this.properties.description,
-        isDarkTheme: this._isDarkTheme,
+        theme: this._theme,
         environmentMessage: this._environmentMessage,
         userDisplayName: this.context.pageContext.user.displayName,
         sp: this._sp,
-        targetSites: this.properties.targetSites || '',
+        targetSites: this.properties.targetSites || [],
         includeSystemLists: this.properties.includeSystemLists || false,
         groupBySite: this.properties.groupBySite !== undefined ? this.properties.groupBySite : true
       }
@@ -87,7 +89,8 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
     if (!currentTheme) {
       return;
     }
-    this._isDarkTheme = !!currentTheme.isInverted;
+    this._theme = currentTheme;
+    this.render();
   }
 
   protected onDispose(): void {
@@ -109,11 +112,17 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
             {
               groupName: strings.ConfigurationGroupName,
               groupFields: [
-                PropertyPaneTextField('targetSites', {
+                PropertyPaneTextField('description', {
+                  label: strings.DescriptionFieldLabel
+                }),
+                PropertyPaneSiteEntryChipInput('targetSites', {
                   label: strings.TargetSitesFieldLabel,
-                  multiline: true,
-                  rows: 6,
-                  description: 'Enter one full site URL per line, e.g. https://armyeitaas.sharepoint-mil.us/sites/USAASC-PEOMS-PM-TAGM'
+                  entries: this.properties.targetSites || [],
+                  theme: this._theme,
+                  onChanged: (targetProperty: string, entries: ISiteEntry[]) => {
+                    this.properties.targetSites = entries;
+                    this.render();
+                  }
                 }),
                 PropertyPaneToggle('includeSystemLists', {
                   label: strings.IncludeSystemListsFieldLabel,

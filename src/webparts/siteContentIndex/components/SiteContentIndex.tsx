@@ -50,20 +50,13 @@ const getListTypeName = (baseTemplate: number): string => {
   return BASE_TEMPLATE_NAMES[baseTemplate] || 'List';
 };
 
-const parseTargetSites = (raw: string): string[] => {
-  return raw
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-};
-
 const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props) => {
   const [results, setResults] = useState<ISiteResult[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [expandedSites, setExpandedSites] = useState<Set<string>>(new Set());
 
-  const siteUrls = parseTargetSites(props.targetSites);
+  const siteUrls = props.targetSites.map((entry) => entry.url);
 
   useEffect(() => {
     if (siteUrls.length === 0) {
@@ -134,6 +127,7 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
     };
 
     loadAllSites().catch((err) => console.error(err));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.sp, props.targetSites, props.includeSystemLists]);
 
   const toggleSite = (siteUrl: string): void => {
@@ -160,26 +154,20 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
     return new Date(raw).toLocaleDateString();
   };
 
-  if (siteUrls.length === 0) {
-    return (
-      <section className={styles.siteContentIndex}>
-        <div className={styles.errorState}>
-          This web part needs to be configured. Open the edit panel and add one or more site URLs under Target Sites.
-        </div>
-      </section>
-    );
-  }
+  const themeColors = props.theme ? props.theme.semanticColors : undefined;
+  const themePalette = props.theme ? props.theme.palette : undefined;
 
-  if (loading) {
-    return (
-      <section className={styles.siteContentIndex}>
-        <div className={styles.loadingState}>
-          <div className={styles.spinner} />
-          <span>Loading site content...</span>
-        </div>
-      </section>
-    );
-  }
+  const rootStyle: React.CSSProperties = themeColors && themePalette ? ({
+    '--scix-text': themeColors.bodyText,
+    '--scix-text-secondary': themeColors.bodySubtext || themeColors.bodyText,
+    '--scix-bg-surface': themeColors.bodyBackground,
+    '--scix-bg-hover': themeColors.bodyBackgroundHovered || themeColors.bodyBackground,
+    '--scix-border': themeColors.bodyDivider || themePalette.neutralLight,
+    '--scix-accent': themePalette.themePrimary,
+    '--scix-accent-text': themePalette.white,
+    '--scix-error-bg': themeColors.errorBackground || 'rgba(163, 61, 61, 0.15)',
+    '--scix-error-text': themeColors.errorText || '#C86A6A'
+  } as React.CSSProperties) : {};
 
   const renderListRow = (list: IListItem, showSite: boolean, siteTitle: string): JSX.Element => (
     <tr key={`${siteTitle}-${list.Id}`} className={styles.row}>
@@ -207,8 +195,29 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
     });
   });
 
+  if (siteUrls.length === 0) {
+    return (
+      <section className={styles.siteContentIndex} style={rootStyle}>
+        <div className={styles.errorState}>
+          This web part needs to be configured. Open the edit panel and add one or more site URLs under Target Sites.
+        </div>
+      </section>
+    );
+  }
+
+  if (loading) {
+    return (
+      <section className={styles.siteContentIndex} style={rootStyle}>
+        <div className={styles.loadingState}>
+          <div className={styles.spinner} />
+          <span>Loading site content...</span>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className={styles.siteContentIndex}>
+    <section className={styles.siteContentIndex} style={rootStyle}>
       <div className={styles.header}>
         <h2 className={styles.title}>Site Content Index</h2>
         <input
