@@ -3,6 +3,7 @@ import * as ReactDom from 'react-dom';
 import { Version } from '@microsoft/sp-core-library';
 import {
   type IPropertyPaneConfiguration,
+  PropertyPaneTextField,
   PropertyPaneToggle
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
@@ -24,7 +25,17 @@ export interface ISiteContentIndexWebPartProps {
   targetSites: ISiteEntry[];
   includeSystemLists: boolean;
   groupBySite: boolean;
+  onlyUniquePermissions: boolean;
+  staleDaysThreshold: string;
 }
+
+const parseStaleDays = (raw: string): number => {
+  const parsed = parseInt(raw, 10);
+  if (isNaN(parsed) || parsed < 0) {
+    return 0;
+  }
+  return parsed;
+};
 
 export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISiteContentIndexWebPartProps> {
 
@@ -47,7 +58,9 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
         sp: this._sp,
         targetSites: this.properties.targetSites || [],
         includeSystemLists: this.properties.includeSystemLists || false,
-        groupBySite: this.properties.groupBySite !== undefined ? this.properties.groupBySite : true
+        groupBySite: this.properties.groupBySite !== undefined ? this.properties.groupBySite : true,
+        onlyUniquePermissions: this.properties.onlyUniquePermissions || false,
+        staleDaysThreshold: parseStaleDays(this.properties.staleDaysThreshold)
       }
     );
 
@@ -136,6 +149,15 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
                   label: strings.GroupBySiteFieldLabel,
                   onText: 'Grouped',
                   offText: 'Flat list'
+                }),
+                PropertyPaneToggle('onlyUniquePermissions', {
+                  label: strings.OnlyUniquePermissionsFieldLabel,
+                  onText: 'Unique only',
+                  offText: 'All lists'
+                }),
+                PropertyPaneTextField('staleDaysThreshold', {
+                  label: strings.StaleDaysThresholdFieldLabel,
+                  description: 'Flag libraries not modified within this many days. Leave blank or 0 to disable.'
                 })
               ]
             }

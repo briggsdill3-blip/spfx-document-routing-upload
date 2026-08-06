@@ -52,9 +52,10 @@ export class PropertyPaneSiteEntryChipInputField implements IPropertyPaneField<I
     }
 
     const element: React.ReactElement<ISiteEntryChipInputProps> = React.createElement(SiteEntryChipInput, {
-      entries: this.properties.entries,
-      onChange: this.onChanged.bind(this)
-    });
+        label: this.properties.label,
+        entries: this.properties.entries,
+        onChange: this.onChanged.bind(this)
+      });
 
     ReactDom.render(element, elem);
   }

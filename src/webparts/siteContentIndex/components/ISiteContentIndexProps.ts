@@ -3,7 +3,6 @@ import { IReadonlyTheme } from '@microsoft/sp-component-base';
 import { ISiteEntry } from './ISiteEntry';
 
 export interface ISiteContentIndexProps {
-  description: string;
   theme: IReadonlyTheme | undefined;
   environmentMessage: string;
   userDisplayName: string;
@@ -11,4 +10,6 @@ export interface ISiteContentIndexProps {
   targetSites: ISiteEntry[];
   includeSystemLists: boolean;
   groupBySite: boolean;
+  onlyUniquePermissions: boolean;
+  staleDaysThreshold: number;
 }

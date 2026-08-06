@@ -50,6 +50,8 @@ const getListTypeName = (baseTemplate: number): string => {
   return BASE_TEMPLATE_NAMES[baseTemplate] || 'List';
 };
 
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
 const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props) => {
   const [results, setResults] = useState<ISiteResult[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -140,11 +142,25 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
     setExpandedSites(next);
   };
 
-  const matchesSearch = (list: IListItem): boolean => {
-    if (!searchTerm) {
-      return true;
+  const matchesFilters = (list: IListItem): boolean => {
+    if (searchTerm && list.Title.toLowerCase().indexOf(searchTerm.toLowerCase()) === -1) {
+      return false;
     }
-    return list.Title.toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1;
+    if (props.onlyUniquePermissions && !list.HasUniqueRoleAssignments) {
+      return false;
+    }
+    return true;
+  };
+
+  const isStale = (list: IListItem): boolean => {
+    if (!props.staleDaysThreshold || props.staleDaysThreshold <= 0) {
+      return false;
+    }
+    if (!list.LastModified) {
+      return false;
+    }
+    const ageInDays = (Date.now() - new Date(list.LastModified).getTime()) / MS_PER_DAY;
+    return ageInDays > props.staleDaysThreshold;
   };
 
   const formatDate = (raw: string): string => {
@@ -174,6 +190,7 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
       {showSite && <td className={styles.cellSite}>{siteTitle}</td>}
       <td className={styles.cellName}>
         <a href={list.Url} target="_blank" rel="noreferrer">{list.Title}</a>
+        {isStale(list) && <span className={styles.staleFlag}>Stale</span>}
       </td>
       <td className={styles.cellType}>{list.Type}</td>
       <td className={styles.cellCount}>{list.ItemCount}</td>
@@ -190,7 +207,7 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
 
   const flatRows: JSX.Element[] = [];
   results.forEach((site) => {
-    site.lists.filter(matchesSearch).forEach((list) => {
+    site.lists.filter(matchesFilters).forEach((list) => {
       flatRows.push(renderListRow(list, true, site.siteTitle));
     });
   });
@@ -232,10 +249,10 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
       {props.groupBySite ? (
         <div className={styles.groupedView}>
           {results.map((site) => {
-            const filteredLists = site.lists.filter(matchesSearch);
+            const filteredLists = site.lists.filter(matchesFilters);
             const isExpanded = expandedSites.has(site.siteUrl);
 
-            if (searchTerm && filteredLists.length === 0 && !site.error) {
+            if ((searchTerm || props.onlyUniquePermissions) && filteredLists.length === 0 && !site.error) {
               return null;
             }
 

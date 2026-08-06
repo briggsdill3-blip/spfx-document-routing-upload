@@ -4,6 +4,7 @@ import styles from './SiteEntryChipInput.module.scss';
 import { ISiteEntry, deriveLabel } from '../components/ISiteEntry';
 
 export interface ISiteEntryChipInputProps {
+  label: string;
   entries: ISiteEntry[];
   onChange: (entries: ISiteEntry[]) => void;
 }
@@ -47,6 +48,8 @@ const SiteEntryChipInput: React.FunctionComponent<ISiteEntryChipInputProps> = (p
 
   return (
     <div className={styles.chipInputWrapper}>
+      <div className={styles.fieldLabel}>{props.label}</div>
+
       <div className={styles.inputRow}>
         <input
           type="text"
