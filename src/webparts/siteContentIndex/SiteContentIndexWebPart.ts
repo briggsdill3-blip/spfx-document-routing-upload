@@ -3,7 +3,6 @@ import * as ReactDom from 'react-dom';
 import { Version } from '@microsoft/sp-core-library';
 import {
   type IPropertyPaneConfiguration,
-  PropertyPaneTextField,
   PropertyPaneToggle
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
@@ -22,7 +21,6 @@ import { ISiteEntry } from './components/ISiteEntry';
 import { PropertyPaneSiteEntryChipInputField } from './controls/SiteEntryChipInputField';
 
 export interface ISiteContentIndexWebPartProps {
-  description: string;
   targetSites: ISiteEntry[];
   includeSystemLists: boolean;
   groupBySite: boolean;
@@ -33,6 +31,7 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
   private _theme: IReadonlyTheme | undefined;
   private _environmentMessage: string = '';
   private _sp!: SPFI;
+  private _targetSitesField: PropertyPaneSiteEntryChipInputField | undefined;
 
   public render(): void {
     if (!this._sp) {
@@ -42,7 +41,6 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
     const element: React.ReactElement<ISiteContentIndexProps> = React.createElement(
       SiteContentIndex,
       {
-        description: this.properties.description,
         theme: this._theme,
         environmentMessage: this._environmentMessage,
         userDisplayName: this.context.pageContext.user.displayName,
@@ -105,6 +103,19 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
   }
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
+    this._targetSitesField = new PropertyPaneSiteEntryChipInputField('targetSites', {
+      label: strings.TargetSitesFieldLabel,
+      entries: this.properties.targetSites || [],
+      onPropertyChange: (propertyPath: string, newValue: ISiteEntry[]) => {
+        this.properties.targetSites = newValue;
+        this.render();
+        if (this._targetSitesField) {
+          this._targetSitesField.properties.entries = newValue;
+          this._targetSitesField.render();
+        }
+      }
+    });
+
     return {
       pages: [
         {
@@ -115,17 +126,7 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
             {
               groupName: strings.ConfigurationGroupName,
               groupFields: [
-                PropertyPaneTextField('description', {
-                  label: strings.DescriptionFieldLabel
-                }),
-                new PropertyPaneSiteEntryChipInputField('targetSites', {
-                  label: strings.TargetSitesFieldLabel,
-                  entries: this.properties.targetSites || [],
-                  onPropertyChange: (propertyPath: string, newValue: ISiteEntry[]) => {
-                    this.properties.targetSites = newValue;
-                    this.render();
-                  }
-                }),
+                this._targetSitesField,
                 PropertyPaneToggle('includeSystemLists', {
                   label: strings.IncludeSystemListsFieldLabel,
                   onText: 'Shown',
