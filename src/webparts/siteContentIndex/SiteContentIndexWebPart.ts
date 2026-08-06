@@ -19,6 +19,7 @@ import * as strings from 'SiteContentIndexWebPartStrings';
 import SiteContentIndex from './components/SiteContentIndex';
 import { ISiteContentIndexProps } from './components/ISiteContentIndexProps';
 import { ISiteEntry } from './components/ISiteEntry';
+import { PropertyPaneSiteEntryChipInput } from './controls/SiteEntryChipInputField';
 
 export interface ISiteContentIndexWebPartProps {
   description: string;
@@ -116,6 +117,10 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
               groupFields: [
                 PropertyPaneTextField('description', {
                   label: strings.DescriptionFieldLabel
+                }),
+                PropertyPaneSiteEntryChipInput('targetSites', {
+                  label: strings.TargetSitesFieldLabel,
+                  entries: this.properties.targetSites || []
                 }),
                 PropertyPaneToggle('includeSystemLists', {
                   label: strings.IncludeSystemListsFieldLabel,
