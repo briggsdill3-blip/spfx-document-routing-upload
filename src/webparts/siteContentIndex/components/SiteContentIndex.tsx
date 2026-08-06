@@ -14,6 +14,17 @@ interface IListItem {
   Url: string;
 }
 
+interface IRawListInfo {
+  Id: string;
+  Title: string;
+  BaseTemplate: number;
+  ItemCount: number;
+  LastItemModifiedDate: string;
+  HasUniqueRoleAssignments: boolean;
+  DefaultViewUrl: string;
+  Hidden: boolean;
+}
+
 interface ISiteResult {
   siteUrl: string;
   siteTitle: string;
@@ -85,17 +96,17 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
               listsQuery = listsQuery.filter('Hidden eq false');
             }
 
-            const rawLists = await listsQuery();
+            const rawLists = (await listsQuery()) as unknown as IRawListInfo[];
 
             const mapped: IListItem[] = rawLists
-              .map((raw: Record<string, unknown>) => ({
-                Id: raw.Id as string,
-                Title: raw.Title as string,
-                Type: getListTypeName(raw.BaseTemplate as number),
-                ItemCount: raw.ItemCount as number,
-                LastModified: raw.LastItemModifiedDate as string,
-                HasUniqueRoleAssignments: raw.HasUniqueRoleAssignments as boolean,
-                Url: `${new URL(siteUrl).origin}${raw.DefaultViewUrl as string}`
+              .map((raw: IRawListInfo) => ({
+                Id: raw.Id,
+                Title: raw.Title,
+                Type: getListTypeName(raw.BaseTemplate),
+                ItemCount: raw.ItemCount,
+                LastModified: raw.LastItemModifiedDate,
+                HasUniqueRoleAssignments: raw.HasUniqueRoleAssignments,
+                Url: `${new URL(siteUrl).origin}${raw.DefaultViewUrl}`
               }))
               .sort((a, b) => a.Title.localeCompare(b.Title));
 
@@ -189,6 +200,13 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
     </tr>
   );
 
+  const flatRows: JSX.Element[] = [];
+  results.forEach((site) => {
+    site.lists.filter(matchesSearch).forEach((list) => {
+      flatRows.push(renderListRow(list, true, site.siteTitle));
+    });
+  });
+
   return (
     <section className={styles.siteContentIndex}>
       <div className={styles.header}>
@@ -264,9 +282,7 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
             </tr>
           </thead>
           <tbody>
-            {results.flatMap((site) =>
-              site.lists.filter(matchesSearch).map((list) => renderListRow(list, true, site.siteTitle))
-            )}
+            {flatRows}
           </tbody>
         </table>
       )}
