@@ -4,14 +4,12 @@ import {
   IPropertyPaneField,
   PropertyPaneFieldType
 } from '@microsoft/sp-property-pane';
-import { IReadonlyTheme } from '@microsoft/sp-component-base';
 import SiteEntryChipInput, { ISiteEntryChipInputProps } from './SiteEntryChipInput';
 import { ISiteEntry } from '../components/ISiteEntry';
 
 export interface ISiteEntryChipInputFieldProps {
   label: string;
   entries: ISiteEntry[];
-  theme: IReadonlyTheme | undefined;
   onChanged: (targetProperty: string, entries: ISiteEntry[]) => void;
 }
 
