@@ -30,32 +30,16 @@ class SiteEntryChipInputField implements IPropertyPaneField<ISiteEntryChipInputF
       return;
     }
 
-    const themeColors = this.properties.theme ? this.properties.theme.semanticColors : undefined;
-    const themePalette = this.properties.theme ? this.properties.theme.palette : undefined;
-
-    const bodyText: string = (themeColors && themeColors.bodyText) || '#F5F5F0';
-    const bodyDivider: string = (themeColors && themeColors.bodyDivider) || (themePalette && themePalette.neutralLight) || '#3A3A3A';
-    const bodyBackground: string = (themeColors && themeColors.bodyBackground) || '#1E1E1E';
-    const themePrimary: string = (themePalette && themePalette.themePrimary) || '#BF9B30';
-    const paletteWhite: string = (themePalette && themePalette.white) || '#FFFFFF';
-
-    elem.style.setProperty('--scix-pane-text', bodyText);
-    elem.style.setProperty('--scix-pane-border', bodyDivider);
-    elem.style.setProperty('--scix-pane-input-bg', bodyBackground);
-    elem.style.setProperty('--scix-pane-accent', themePrimary);
-    elem.style.setProperty('--scix-pane-accent-text', paletteWhite);
+    elem.innerHTML = '';
 
     const labelElem = document.createElement('div');
-    labelElem.textContent = this.properties.label || '';
+    labelElem.textContent = this.properties.label || 'Target Sites';
     labelElem.style.fontWeight = '600';
     labelElem.style.fontSize = '14px';
     labelElem.style.marginBottom = '6px';
-    labelElem.style.color = bodyText;
+    elem.appendChild(labelElem);
 
     const controlContainer = document.createElement('div');
-
-    elem.innerHTML = '';
-    elem.appendChild(labelElem);
     elem.appendChild(controlContainer);
 
     const element: React.ReactElement<ISiteEntryChipInputProps> = React.createElement(SiteEntryChipInput, {
