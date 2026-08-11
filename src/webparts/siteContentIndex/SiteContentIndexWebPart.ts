@@ -15,8 +15,6 @@ import '@pnp/sp/lists';
 import '@pnp/sp/items';
 import '@pnp/sp/fields';
 
-import { PropertyFieldListPicker, PropertyFieldListPickerOrderBy } from '@pnp/spfx-property-controls/lib/PropertyFieldListPicker';
-
 import * as strings from 'SiteContentIndexWebPartStrings';
 import SiteContentIndex from './components/SiteContentIndex';
 import { ISiteContentIndexProps } from './components/ISiteContentIndexProps';
