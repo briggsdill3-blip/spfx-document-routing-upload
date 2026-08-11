@@ -6,6 +6,7 @@ declare interface ISiteContentIndexWebPartStrings {
   TargetSitesFieldLabel: string;
   IncludeSystemListsFieldLabel: string;
   GroupBySiteFieldLabel: string;
+  ExpandByDefaultFieldLabel: string;
   OnlyUniquePermissionsFieldLabel: string;
   StaleDaysThresholdFieldLabel: string;
   TitleGroupName: string;

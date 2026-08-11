@@ -15,6 +15,8 @@ import '@pnp/sp/lists';
 import '@pnp/sp/items';
 import '@pnp/sp/fields';
 
+import { PropertyFieldListPicker, PropertyFieldListPickerOrderBy } from '@pnp/spfx-property-controls/lib/PropertyFieldListPicker';
+
 import * as strings from 'SiteContentIndexWebPartStrings';
 import SiteContentIndex from './components/SiteContentIndex';
 import { ISiteContentIndexProps } from './components/ISiteContentIndexProps';
@@ -29,6 +31,7 @@ export interface ISiteContentIndexWebPartProps {
   staleDaysThreshold: string;
   showTitle: boolean;
   customTitle: string;
+  expandByDefault: boolean;
 }
 
 const parseStaleDays = (raw: string): number => {
@@ -64,7 +67,8 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
         onlyUniquePermissions: this.properties.onlyUniquePermissions || false,
         staleDaysThreshold: parseStaleDays(this.properties.staleDaysThreshold),
         showTitle: this.properties.showTitle !== undefined ? this.properties.showTitle : true,
-        customTitle: this.properties.customTitle || ''
+        customTitle: this.properties.customTitle || '',
+        expandByDefault: this.properties.expandByDefault !== undefined ? this.properties.expandByDefault : true
       }
     );
 
@@ -168,6 +172,11 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
                   label: strings.GroupBySiteFieldLabel,
                   onText: 'Grouped',
                   offText: 'Flat list'
+                }),
+                PropertyPaneToggle('expandByDefault', {
+                  label: strings.ExpandByDefaultFieldLabel,
+                  onText: 'Expanded',
+                  offText: 'Collapsed'
                 }),
                 PropertyPaneToggle('onlyUniquePermissions', {
                   label: strings.OnlyUniquePermissionsFieldLabel,

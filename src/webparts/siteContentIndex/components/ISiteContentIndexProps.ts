@@ -14,4 +14,5 @@ export interface ISiteContentIndexProps {
   staleDaysThreshold: number;
   showTitle: boolean;
   customTitle: string;
+  expandByDefault: boolean;
 }

@@ -7,6 +7,7 @@ define([], function() {
     "TargetSitesFieldLabel": "Target Sites",
     "IncludeSystemListsFieldLabel": "Include system lists",
     "GroupBySiteFieldLabel": "Group results by site",
+    "ExpandByDefaultFieldLabel": "Expand sites by default",
     "OnlyUniquePermissionsFieldLabel": "Show only libraries with unique permissions",
     "StaleDaysThresholdFieldLabel": "Flag libraries not modified in (days)",
     "TitleGroupName": "Title",

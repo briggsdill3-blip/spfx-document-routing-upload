@@ -124,13 +124,13 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
       );
 
       setResults(siteResults);
-      setExpandedSites(new Set(siteResults.map((r) => r.siteUrl)));
+      setExpandedSites(props.expandByDefault ? new Set(siteResults.map((r) => r.siteUrl)) : new Set());
       setLoading(false);
     };
 
     loadAllSites().catch((err) => console.error(err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.sp, props.targetSites, props.includeSystemLists]);
+  }, [props.sp, props.targetSites, props.includeSystemLists, props.expandByDefault]);
 
   const toggleSite = (siteUrl: string): void => {
     const next = new Set(expandedSites);
@@ -185,10 +185,6 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
     '--scix-error-text': themeColors.errorText || '#C86A6A'
   } as React.CSSProperties) : {};
 
-  const displayTitle = props.customTitle && props.customTitle.trim().length > 0
-    ? props.customTitle
-    : 'Site Content Index';
-
   const renderListRow = (list: IListItem, showSite: boolean, siteTitle: string): JSX.Element => (
     <tr key={`${siteTitle}-${list.Id}`} className={styles.row}>
       {showSite && <td className={styles.cellSite}>{siteTitle}</td>}
@@ -236,6 +232,10 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
       </section>
     );
   }
+
+  const displayTitle = props.customTitle && props.customTitle.trim().length > 0
+    ? props.customTitle
+    : 'Site Content Index';
 
   return (
     <section className={styles.siteContentIndex} style={rootStyle}>
