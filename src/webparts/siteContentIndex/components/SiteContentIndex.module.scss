@@ -128,6 +128,14 @@
   }
 }
 
+.striped tbody tr:nth-child(even) {
+  background-color: var(--scix-stripe-bg, #2A2A2A);
+}
+
+.striped tbody tr:hover {
+  background-color: var(--scix-bg-hover, #2A2A2A);
+}
+
 .cellSite,
 .cellName,
 .cellType,

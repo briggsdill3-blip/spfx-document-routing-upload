@@ -51,6 +51,8 @@ const getListTypeName = (baseTemplate: number): string => {
 };
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const FALLBACK_ACCENT = '#BF9B30';
+const FALLBACK_STRIPE = '#2A2A2A';
 
 const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props) => {
   const [results, setResults] = useState<ISiteResult[]>([]);
@@ -146,7 +148,10 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
     if (searchTerm && list.Title.toLowerCase().indexOf(searchTerm.toLowerCase()) === -1) {
       return false;
     }
-    if (props.onlyUniquePermissions && !list.HasUniqueRoleAssignments) {
+    if (props.permissionsFilter === 'unique' && !list.HasUniqueRoleAssignments) {
+      return false;
+    }
+    if (props.permissionsFilter === 'inherited' && list.HasUniqueRoleAssignments) {
       return false;
     }
     return true;
@@ -173,17 +178,30 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
   const themeColors = props.theme ? props.theme.semanticColors : undefined;
   const themePalette = props.theme ? props.theme.palette : undefined;
 
-  const rootStyle: React.CSSProperties = themeColors && themePalette ? ({
-    '--scix-text': themeColors.bodyText,
-    '--scix-text-secondary': themeColors.bodySubtext || themeColors.bodyText,
-    '--scix-bg-surface': themeColors.bodyBackground,
-    '--scix-bg-hover': themeColors.bodyBackgroundHovered || themeColors.bodyBackground,
-    '--scix-border': themeColors.bodyDivider || themePalette.neutralLight,
-    '--scix-accent': themePalette.themePrimary,
-    '--scix-accent-text': themePalette.white,
-    '--scix-error-bg': themeColors.errorBackground || 'rgba(163, 61, 61, 0.15)',
-    '--scix-error-text': themeColors.errorText || '#C86A6A'
-  } as React.CSSProperties) : {};
+  const accentColor = props.accentColorOverride && props.accentColorOverride.trim().length > 0
+    ? props.accentColorOverride
+    : (themePalette ? themePalette.themePrimary : FALLBACK_ACCENT);
+
+  const stripeColor = props.stripeColorOverride && props.stripeColorOverride.trim().length > 0
+    ? props.stripeColorOverride
+    : (themePalette ? (themePalette.neutralLighterAlt || themePalette.neutralLight) : FALLBACK_STRIPE);
+
+  const rootStyle: React.CSSProperties = {
+    ...(themeColors && themePalette ? {
+      '--scix-text': themeColors.bodyText,
+      '--scix-text-secondary': themeColors.bodySubtext || themeColors.bodyText,
+      '--scix-bg-surface': themeColors.bodyBackground,
+      '--scix-bg-hover': themeColors.bodyBackgroundHovered || themeColors.bodyBackground,
+      '--scix-border': themeColors.bodyDivider || themePalette.neutralLight,
+      '--scix-accent-text': themePalette.white,
+      '--scix-error-bg': themeColors.errorBackground || 'rgba(163, 61, 61, 0.15)',
+      '--scix-error-text': themeColors.errorText || '#C86A6A'
+    } : {}),
+    '--scix-accent': accentColor,
+    '--scix-stripe-bg': stripeColor
+  } as React.CSSProperties;
+
+  const tableClass = `${styles.table} ${props.enableRowStriping ? styles.striped : ''}`;
 
   const renderListRow = (list: IListItem, showSite: boolean, siteTitle: string): JSX.Element => (
     <tr key={`${siteTitle}-${list.Id}`} className={styles.row}>
@@ -256,7 +274,7 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
             const filteredLists = site.lists.filter(matchesFilters);
             const isExpanded = expandedSites.has(site.siteUrl);
 
-            if ((searchTerm || props.onlyUniquePermissions) && filteredLists.length === 0 && !site.error) {
+            if ((searchTerm || props.permissionsFilter !== 'all') && filteredLists.length === 0 && !site.error) {
               return null;
             }
 
@@ -278,7 +296,7 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
                     {site.error ? (
                       <div className={styles.siteError}>{site.error}</div>
                     ) : (
-                      <table className={styles.table}>
+                      <table className={tableClass}>
                         <thead>
                           <tr>
                             <th>Name</th>
@@ -300,7 +318,7 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
           })}
         </div>
       ) : (
-        <table className={styles.table}>
+        <table className={tableClass}>
           <thead>
             <tr>
               <th>Site</th>

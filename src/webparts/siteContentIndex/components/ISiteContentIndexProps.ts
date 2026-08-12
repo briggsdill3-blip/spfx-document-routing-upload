@@ -10,9 +10,12 @@ export interface ISiteContentIndexProps {
   targetSites: ISiteEntry[];
   includeSystemLists: boolean;
   groupBySite: boolean;
-  onlyUniquePermissions: boolean;
+  permissionsFilter: 'all' | 'unique' | 'inherited';
   staleDaysThreshold: number;
   showTitle: boolean;
   customTitle: string;
   expandByDefault: boolean;
+  enableRowStriping: boolean;
+  accentColorOverride: string;
+  stripeColorOverride: string;
 }
