@@ -4,11 +4,11 @@ import { Version } from '@microsoft/sp-core-library';
 import {
   type IPropertyPaneConfiguration,
   PropertyPaneTextField,
-  PropertyPaneToggle,
-  PropertyPaneDropdown
+  PropertyPaneToggle
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
+import { PropertyFieldColorPicker, PropertyFieldColorPickerStyle } from '@pnp/spfx-property-controls/lib/PropertyFieldColorPicker';
 
 import { spfi, SPFx as spSPFx, SPFI } from '@pnp/sp';
 import '@pnp/sp/webs';
@@ -21,13 +21,11 @@ import SiteContentIndex from './components/SiteContentIndex';
 import { ISiteContentIndexProps } from './components/ISiteContentIndexProps';
 import { ISiteEntry } from './components/ISiteEntry';
 import { PropertyPaneSiteEntryChipInputField } from './controls/SiteEntryChipInputField';
-import { PropertyPaneColorPickerField } from './controls/ColorPickerField';
 
 export interface ISiteContentIndexWebPartProps {
   targetSites: ISiteEntry[];
   includeSystemLists: boolean;
   groupBySite: boolean;
-  permissionsFilter: string;
   staleDaysThreshold: string;
   showTitle: boolean;
   customTitle: string;
@@ -60,8 +58,6 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
       return;
     }
 
-    const permissionsFilter = (this.properties.permissionsFilter || 'all') as 'all' | 'unique' | 'inherited';
-
     const element: React.ReactElement<ISiteContentIndexProps> = React.createElement(
       SiteContentIndex,
       {
@@ -72,7 +68,6 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
         targetSites: this.properties.targetSites || [],
         includeSystemLists: this.properties.includeSystemLists || false,
         groupBySite: this.properties.groupBySite !== undefined ? this.properties.groupBySite : true,
-        permissionsFilter,
         staleDaysThreshold: parseStaleDays(this.properties.staleDaysThreshold),
         showTitle: this.properties.showTitle !== undefined ? this.properties.showTitle : true,
         customTitle: this.properties.customTitle || '',
@@ -131,7 +126,12 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
   }
 
   protected get dataVersion(): Version {
-    return Version.parse('2.0');
+    return Version.parse('2.1');
+  }
+
+  private onPropertyPaneFieldChanged(propertyPath: string, oldValue: unknown, newValue: unknown): void {
+    (this.properties as unknown as Record<string, unknown>)[propertyPath] = newValue;
+    this.render();
   }
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
@@ -149,8 +149,9 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
     });
 
     const themePalette = this._theme ? this._theme.palette : undefined;
+    const themeColors = this._theme ? this._theme.semanticColors : undefined;
     const accentDefault: string = (themePalette && themePalette.themePrimary) || FALLBACK_ACCENT;
-    const stripeDefault: string = (themePalette && (themePalette.neutralLighterAlt || themePalette.neutralLight)) || FALLBACK_STRIPE;
+    const stripeDefault: string = (themeColors && themeColors.bodyBackgroundHovered) || FALLBACK_STRIPE;
 
     return {
       pages: [
@@ -193,15 +194,6 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
                   onText: 'Expanded',
                   offText: 'Collapsed'
                 }),
-                PropertyPaneDropdown('permissionsFilter', {
-                  label: 'Permissions Filter',
-                  options: [
-                    { key: 'all', text: 'All Lists' },
-                    { key: 'unique', text: 'Unique Permissions Only' },
-                    { key: 'inherited', text: 'Inherited Permissions Only' }
-                  ],
-                  selectedKey: this.properties.permissionsFilter || 'all'
-                }),
                 PropertyPaneTextField('staleDaysThreshold', {
                   label: strings.StaleDaysThresholdFieldLabel,
                   description: 'Flag libraries not modified within this many days. Leave blank or 0 to disable.'
@@ -215,6 +207,22 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
                   label: 'Alternating Row Striping',
                   onText: 'On',
                   offText: 'Off'
+                }),
+                PropertyFieldColorPicker('accentColorOverride', {
+                  label: 'Accent Color',
+                  selectedColor: this.properties.accentColorOverride || accentDefault,
+                  onPropertyChange: this.onPropertyPaneFieldChanged.bind(this),
+                  properties: this.properties,
+                  key: 'accentColorOverrideField',
+                  style: PropertyFieldColorPickerStyle.Full
+                }),
+                PropertyFieldColorPicker('stripeColorOverride', {
+                  label: 'Row Stripe Color',
+                  selectedColor: this.properties.stripeColorOverride || stripeDefault,
+                  onPropertyChange: this.onPropertyPaneFieldChanged.bind(this),
+                  properties: this.properties,
+                  key: 'stripeColorOverrideField',
+                  style: PropertyFieldColorPickerStyle.Full
                 })
               ]
             }

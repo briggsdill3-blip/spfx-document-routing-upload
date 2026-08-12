@@ -32,6 +32,8 @@ interface ISiteResult {
   error: string;
 }
 
+type PermissionsFilter = 'all' | 'unique' | 'inherited';
+
 const BASE_TEMPLATE_NAMES: Record<number, string> = {
   100: 'Custom List',
   101: 'Document Library',
@@ -59,6 +61,7 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [expandedSites, setExpandedSites] = useState<Set<string>>(new Set());
+  const [permissionsFilter, setPermissionsFilter] = useState<PermissionsFilter>('all');
 
   const siteUrls = props.targetSites.map((entry) => entry.url);
 
@@ -148,10 +151,10 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
     if (searchTerm && list.Title.toLowerCase().indexOf(searchTerm.toLowerCase()) === -1) {
       return false;
     }
-    if (props.permissionsFilter === 'unique' && !list.HasUniqueRoleAssignments) {
+    if (permissionsFilter === 'unique' && !list.HasUniqueRoleAssignments) {
       return false;
     }
-    if (props.permissionsFilter === 'inherited' && list.HasUniqueRoleAssignments) {
+    if (permissionsFilter === 'inherited' && list.HasUniqueRoleAssignments) {
       return false;
     }
     return true;
@@ -182,9 +185,12 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
     ? props.accentColorOverride
     : (themePalette ? themePalette.themePrimary : FALLBACK_ACCENT);
 
+  // Uses bodyBackgroundHovered, the same token the hover states already rely on,
+  // since Fluent guarantees it's visually distinct from the base background.
+  // neutralLighterAlt/neutralLight can land nearly identical to the background in dark themes.
   const stripeColor = props.stripeColorOverride && props.stripeColorOverride.trim().length > 0
     ? props.stripeColorOverride
-    : (themePalette ? (themePalette.neutralLighterAlt || themePalette.neutralLight) : FALLBACK_STRIPE);
+    : (themeColors && themeColors.bodyBackgroundHovered ? themeColors.bodyBackgroundHovered : FALLBACK_STRIPE);
 
   const rootStyle: React.CSSProperties = {
     ...(themeColors && themePalette ? {
@@ -259,13 +265,25 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
     <section className={styles.siteContentIndex} style={rootStyle}>
       <div className={styles.header}>
         {props.showTitle && <h2 className={styles.title}>{displayTitle}</h2>}
-        <input
-          type="text"
-          className={styles.searchBox}
-          placeholder="Search lists and libraries..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        <div className={styles.headerControls}>
+          <input
+            type="text"
+            className={styles.searchBox}
+            placeholder="Search lists and libraries..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <select
+            className={styles.permsSelect}
+            value={permissionsFilter}
+            onChange={(e) => setPermissionsFilter(e.target.value as PermissionsFilter)}
+            aria-label="Filter by permissions"
+          >
+            <option value="all">All Permissions</option>
+            <option value="unique">Unique Only</option>
+            <option value="inherited">Inherited Only</option>
+          </select>
+        </div>
       </div>
 
       {props.groupBySite ? (
@@ -274,7 +292,7 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
             const filteredLists = site.lists.filter(matchesFilters);
             const isExpanded = expandedSites.has(site.siteUrl);
 
-            if ((searchTerm || props.permissionsFilter !== 'all') && filteredLists.length === 0 && !site.error) {
+            if ((searchTerm || permissionsFilter !== 'all') && filteredLists.length === 0 && !site.error) {
               return null;
             }
 

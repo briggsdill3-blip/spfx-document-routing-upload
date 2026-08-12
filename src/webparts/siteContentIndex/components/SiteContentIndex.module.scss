@@ -23,6 +23,13 @@
   color: var(--scix-text, #F5F5F0);
 }
 
+.headerControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .searchBox {
   background-color: var(--scix-bg-surface, #1E1E1E);
   border: 1px solid var(--scix-border, #3A3A3A);
@@ -40,6 +47,22 @@
 
   &::placeholder {
     color: var(--scix-text-secondary, #B8B8B0);
+  }
+}
+
+.permsSelect {
+  background-color: var(--scix-bg-surface, #1E1E1E);
+  border: 1px solid var(--scix-border, #3A3A3A);
+  border-radius: 6px;
+  color: var(--scix-text, #F5F5F0);
+  font-size: 13px;
+  padding: 6px 10px;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--scix-accent, #BF9B30);
+    outline-offset: 1px;
+    border-color: var(--scix-accent, #BF9B30);
   }
 }
 
