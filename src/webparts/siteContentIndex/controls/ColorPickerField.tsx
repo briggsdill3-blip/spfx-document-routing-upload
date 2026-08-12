@@ -12,6 +12,11 @@ export interface IColorPickerFieldProps {
   onPropertyChange: (propertyPath: string, newValue: string) => void;
 }
 
+interface IInternalProperties extends IColorPickerFieldProps {
+  onRender?: (elem: HTMLElement) => void;
+  onDispose?: (elem: HTMLElement) => void;
+}
+
 interface IColorSwatchControlProps {
   value: string;
   defaultColor: string;
@@ -98,63 +103,63 @@ const ColorSwatchControl: React.FunctionComponent<IColorSwatchControlProps> = (p
   );
 };
 
-class ColorPickerField implements IPropertyPaneField<IColorPickerFieldProps> {
+class ColorPickerField implements IPropertyPaneField<IInternalProperties> {
   public type: PropertyPaneFieldType = PropertyPaneFieldType.Custom;
   public targetProperty: string;
   public key: string;
-  public properties: IColorPickerFieldProps;
-  private elem: HTMLElement | undefined;
+  public properties: IInternalProperties;
+  private _originalProps: IColorPickerFieldProps;
 
   constructor(targetProperty: string, properties: IColorPickerFieldProps) {
     this.targetProperty = targetProperty;
     this.key = targetProperty;
-    this.properties = properties;
+    this._originalProps = properties;
+    this.properties = {
+      ...properties,
+      onRender: this._onRender.bind(this),
+      onDispose: this._onDispose.bind(this)
+    };
   }
 
-  public render(): void {
-    if (!this.elem) {
+  private _onRender(elem: HTMLElement): void {
+    if (!elem) {
       return;
     }
-    this.onRender(this.elem);
-  }
 
-  public onRender = (elem: HTMLElement): void => {
-    this.elem = elem;
+    elem.innerHTML = '';
 
     const labelElem = document.createElement('div');
-    labelElem.textContent = this.properties.label;
+    labelElem.textContent = this._originalProps.label;
     labelElem.style.fontWeight = '600';
     labelElem.style.fontSize = '14px';
     labelElem.style.marginBottom = '6px';
+    elem.appendChild(labelElem);
 
     const controlContainer = document.createElement('div');
-
-    elem.innerHTML = '';
-    elem.appendChild(labelElem);
     elem.appendChild(controlContainer);
 
     const element: React.ReactElement<IColorSwatchControlProps> = React.createElement(ColorSwatchControl, {
-      value: this.properties.value,
-      defaultColor: this.properties.defaultColor,
+      value: this._originalProps.value,
+      defaultColor: this._originalProps.defaultColor,
       onChange: (newValue: string) => {
-        this.properties.value = newValue;
-        this.properties.onPropertyChange(this.targetProperty, newValue);
+        this._originalProps.value = newValue;
+        this._originalProps.onPropertyChange(this.targetProperty, newValue);
       }
     });
 
     ReactDom.render(element, controlContainer);
-  };
+  }
 
-  public onDispose = (elem: HTMLElement): void => {
+  private _onDispose(elem: HTMLElement): void {
     if (elem) {
       ReactDom.unmountComponentAtNode(elem);
     }
-  };
+  }
 }
 
 export function PropertyPaneColorPickerField(
   targetProperty: string,
   properties: IColorPickerFieldProps
-): IPropertyPaneField<IColorPickerFieldProps> {
+): IPropertyPaneField<IInternalProperties> {
   return new ColorPickerField(targetProperty, properties);
 }

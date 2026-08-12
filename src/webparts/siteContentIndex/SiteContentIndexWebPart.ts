@@ -131,7 +131,7 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
   }
 
   protected get dataVersion(): Version {
-    return Version.parse('1.1');
+    return Version.parse('2.0');
   }
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
