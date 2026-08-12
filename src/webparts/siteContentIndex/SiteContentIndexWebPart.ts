@@ -149,8 +149,8 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
     });
 
     const themePalette = this._theme ? this._theme.palette : undefined;
-    const accentDefault = themePalette ? themePalette.themePrimary : FALLBACK_ACCENT;
-    const stripeDefault = themePalette ? (themePalette.neutralLighterAlt || themePalette.neutralLight) : FALLBACK_STRIPE;
+    const accentDefault: string = (themePalette && themePalette.themePrimary) || FALLBACK_ACCENT;
+    const stripeDefault: string = (themePalette && (themePalette.neutralLighterAlt || themePalette.neutralLight)) || FALLBACK_STRIPE;
 
     return {
       pages: [
