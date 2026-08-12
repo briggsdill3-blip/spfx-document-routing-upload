@@ -129,7 +129,7 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
     return Version.parse('2.1');
   }
 
-  private onPropertyPaneFieldChanged(propertyPath: string, oldValue: unknown, newValue: unknown): void {
+  private _handleColorFieldChange(propertyPath: string, oldValue: unknown, newValue: unknown): void {
     (this.properties as unknown as Record<string, unknown>)[propertyPath] = newValue;
     this.render();
   }
@@ -211,7 +211,7 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
                 PropertyFieldColorPicker('accentColorOverride', {
                   label: 'Accent Color',
                   selectedColor: this.properties.accentColorOverride || accentDefault,
-                  onPropertyChange: this.onPropertyPaneFieldChanged.bind(this),
+                  onPropertyChange: this._handleColorFieldChange.bind(this),
                   properties: this.properties,
                   key: 'accentColorOverrideField',
                   style: PropertyFieldColorPickerStyle.Full
@@ -219,7 +219,7 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
                 PropertyFieldColorPicker('stripeColorOverride', {
                   label: 'Row Stripe Color',
                   selectedColor: this.properties.stripeColorOverride || stripeDefault,
-                  onPropertyChange: this.onPropertyPaneFieldChanged.bind(this),
+                  onPropertyChange: this._handleColorFieldChange.bind(this),
                   properties: this.properties,
                   key: 'stripeColorOverrideField',
                   style: PropertyFieldColorPickerStyle.Full
