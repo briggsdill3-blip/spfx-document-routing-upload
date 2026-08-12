@@ -215,24 +215,6 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
                   label: 'Alternating Row Striping',
                   onText: 'On',
                   offText: 'Off'
-                }),
-                PropertyPaneColorPickerField('accentColorOverride', {
-                  label: 'Accent Color',
-                  value: this.properties.accentColorOverride || '',
-                  defaultColor: accentDefault,
-                  onPropertyChange: (propertyPath: string, newValue: string) => {
-                    this.properties.accentColorOverride = newValue;
-                    this.render();
-                  }
-                }),
-                PropertyPaneColorPickerField('stripeColorOverride', {
-                  label: 'Row Stripe Color',
-                  value: this.properties.stripeColorOverride || '',
-                  defaultColor: stripeDefault,
-                  onPropertyChange: (propertyPath: string, newValue: string) => {
-                    this.properties.stripeColorOverride = newValue;
-                    this.render();
-                  }
                 })
               ]
             }
