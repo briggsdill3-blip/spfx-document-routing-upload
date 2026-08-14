@@ -3,14 +3,15 @@ import { useState, useEffect } from 'react';
 import { Web } from '@pnp/sp/webs';
 import { Icon } from '@fluentui/react/lib/Icon';
 import { Panel, PanelType } from '@fluentui/react/lib/Panel';
-import { PeoplePicker, PrincipalType, IPeoplePickerUserItem } from '@pnp/spfx-controls-react/lib/PeoplePicker';
+import { PeoplePicker, PrincipalType } from '@pnp/spfx-controls-react/lib/PeoplePicker';
+import type { IPersonaProps } from '@fluentui/react/lib/Persona';
 import styles from './DocumentUploadRouter.module.scss';
 import type { IDocumentUploadRouterProps } from './IDocumentUploadRouterProps';
 import type { ISiteEntry } from './ISiteEntry';
 
 const FALLBACK_ACCENT = '#BF9B30';
 const FALLBACK_TILE_BG = '#1E1E1E';
-const LAST_ROUTE_STORAGE_KEY = 'documentUploadRouter.lastRouteUrl';
+const LAST_ROUTE_STORAGE_KEY = 'documentUploadRouter.lastRoute';
 const CHUNK_THRESHOLD_BYTES = 10 * 1024 * 1024;
 
 const SUPPORTED_FIELD_TYPES = ['Text', 'Note', 'Choice', 'MultiChoice', 'DateTime', 'Number', 'Boolean', 'User'];
@@ -44,6 +45,15 @@ interface IRawFieldInfo {
   ReadOnlyField: boolean;
 }
 
+interface ILastRoute {
+  siteUrl: string;
+  libraryName: string;
+}
+
+interface IPickedPerson extends IPersonaProps {
+  loginName?: string;
+}
+
 const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> = (props) => {
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(false);
   const [step, setStep] = useState<WizardStep>('route');
@@ -51,7 +61,7 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
   const [selectedLibrary, setSelectedLibrary] = useState<string>('');
   const [availableLibraries, setAvailableLibraries] = useState<string[]>([]);
   const [libraryLoadState, setLibraryLoadState] = useState<'idle' | 'loading' | 'error'>('idle');
-  const [lastRouteUrl, setLastRouteUrl] = useState<string>('');
+  const [lastRoute, setLastRoute] = useState<ILastRoute | undefined>(undefined);
 
   const [dynamicFields, setDynamicFields] = useState<IDynamicField[]>([]);
   const [fieldsLoadState, setFieldsLoadState] = useState<'idle' | 'loading' | 'error'>('idle');
@@ -68,14 +78,27 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
     try {
       const stored = window.localStorage.getItem(LAST_ROUTE_STORAGE_KEY);
       if (stored) {
-        setLastRouteUrl(stored);
+        const parsed = JSON.parse(stored) as ILastRoute;
+        if (parsed && parsed.siteUrl) {
+          setLastRoute(parsed);
+        }
       }
     } catch (err) {
-      // localStorage unavailable, last-used memory simply won't be offered
+      // localStorage unavailable or malformed, last-used memory simply won't be offered
     }
   }, []);
 
-  const lastRouteEntry = props.targetSites.filter((entry) => entry.url === lastRouteUrl)[0];
+  const lastRouteEntry = lastRoute
+    ? props.targetSites.filter((entry) => entry.url === lastRoute.siteUrl)[0]
+    : undefined;
+
+  const sortedTargetSites = React.useMemo(() => {
+    const functional = props.targetSites.filter((e) => e.label.toUpperCase().indexOf('-PD-') === -1);
+    const productDirectorate = props.targetSites.filter((e) => e.label.toUpperCase().indexOf('-PD-') !== -1);
+    functional.sort((a, b) => a.label.localeCompare(b.label));
+    productDirectorate.sort((a, b) => a.label.localeCompare(b.label));
+    return [...functional, ...productDirectorate];
+  }, [props.targetSites]);
 
   const resetWizard = (): void => {
     setStep('route');
@@ -103,20 +126,22 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
     setIsPanelOpen(false);
   };
 
-  const rememberRoute = (site: ISiteEntry): void => {
+  const rememberRoute = (site: ISiteEntry, libraryName: string): void => {
+    const next: ILastRoute = { siteUrl: site.url, libraryName };
     try {
-      window.localStorage.setItem(LAST_ROUTE_STORAGE_KEY, site.url);
+      window.localStorage.setItem(LAST_ROUTE_STORAGE_KEY, JSON.stringify(next));
     } catch (err) {
       // localStorage unavailable, safe to ignore
     }
-    setLastRouteUrl(site.url);
+    setLastRoute(next);
   };
 
-  const goToLibraryStep = (site: ISiteEntry): void => {
+  const goToLibraryStep = (site: ISiteEntry, preselectLibrary?: string): void => {
     setSelectedSite(site);
     setStep('library');
     setLibraryLoadState('loading');
     setAvailableLibraries([]);
+    setSelectedLibrary('');
 
     const web = Web([props.sp.web, site.url]);
     const hiddenLibraries = site.hiddenLibraries || [];
@@ -130,6 +155,9 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
           .filter((name) => hiddenLibraries.indexOf(name) === -1)
           .sort((a, b) => a.localeCompare(b));
         setAvailableLibraries(names);
+        if (preselectLibrary && names.indexOf(preselectLibrary) !== -1) {
+          setSelectedLibrary(preselectLibrary);
+        }
         setLibraryLoadState('idle');
       })
       .catch((err) => {
@@ -139,15 +167,14 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
   };
 
   const handleUseLastRoute = (): void => {
-    if (lastRouteEntry) {
-      goToLibraryStep(lastRouteEntry);
+    if (lastRouteEntry && lastRoute) {
+      goToLibraryStep(lastRouteEntry, lastRoute.libraryName);
     }
   };
 
   const handleSelectSite = (url: string): void => {
     const site = props.targetSites.filter((entry) => entry.url === url)[0];
     if (site) {
-      rememberRoute(site);
       goToLibraryStep(site);
     }
   };
@@ -181,8 +208,6 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
             initialValues[f.internalName] = [];
           } else if (f.typeAsString === 'User') {
             initialValues[f.internalName] = [];
-          } else if (f.typeAsString === 'Boolean') {
-            initialValues[f.internalName] = '';
           } else {
             initialValues[f.internalName] = '';
           }
@@ -198,7 +223,7 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
 
   const handleContinueToForm = (): void => {
     if (selectedSite) {
-      rememberRoute(selectedSite);
+      rememberRoute(selectedSite, selectedLibrary);
       loadFieldsForLibrary(selectedSite, selectedLibrary);
     }
     setStep('form');
@@ -263,29 +288,25 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
       const list = web.lists.getByTitle(selectedLibrary);
 
       let fileServerRelativeUrl = '';
-      let getItemFn: () => Promise<{ update: (payload: Record<string, unknown>) => Promise<unknown> }>;
 
       if (selectedFile.size > CHUNK_THRESHOLD_BYTES) {
         const chunkResult = await list.rootFolder.files.addChunked(
           selectedFile.name,
           selectedFile,
-          (data) => {
-            if (data.totalBlocks > 0) {
+          (data: any) => {
+            if (data && typeof data.blockNumber === 'number' && typeof data.totalBlocks === 'number' && data.totalBlocks > 0) {
               setUploadProgress(Math.round((data.blockNumber / data.totalBlocks) * 100));
             }
-          },
-          false
+          }
         );
-        fileServerRelativeUrl = chunkResult.data.ServerRelativeUrl;
-        getItemFn = () => chunkResult.file.getItem();
+        fileServerRelativeUrl = chunkResult.ServerRelativeUrl;
       } else {
         const addResult = await list.rootFolder.files.addUsingPath(selectedFile.name, selectedFile, { Overwrite: false });
         setUploadProgress(100);
-        fileServerRelativeUrl = addResult.data.ServerRelativeUrl;
-        getItemFn = () => addResult.file.getItem();
+        fileServerRelativeUrl = addResult.ServerRelativeUrl;
       }
 
-      const item = await getItemFn();
+      const item = await web.getFileByServerRelativePath(fileServerRelativeUrl).getItem();
 
       const updatePayload: Record<string, unknown> = {};
 
@@ -293,10 +314,10 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
         const value = fieldValues[field.internalName];
 
         if (field.typeAsString === 'User') {
-          const people = (value as IPeoplePickerUserItem[]) || [];
+          const people = (value as IPickedPerson[]) || [];
           if (people.length > 0 && people[0].loginName) {
             const ensured = await web.ensureUser(people[0].loginName);
-            updatePayload[field.internalName + 'Id'] = ensured.data.Id;
+            updatePayload[field.internalName + 'Id'] = ensured.Id;
           }
           continue;
         }
@@ -466,7 +487,7 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
             principalTypes={[PrincipalType.User]}
             resolveDelay={300}
             defaultSelectedUsers={[]}
-            onChange={(items: IPeoplePickerUserItem[]) => updateFieldValue(field.internalName, items)}
+            onChange={(items: IPersonaProps[]) => updateFieldValue(field.internalName, items)}
           />
         );
       default:
@@ -488,7 +509,7 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
       return arr.length > 0 ? arr.join(', ') : '(none)';
     }
     if (field.typeAsString === 'User') {
-      const people = (value as IPeoplePickerUserItem[]) || [];
+      const people = (value as IPickedPerson[]) || [];
       return people.length > 0 ? (people[0].text || people[0].loginName || '(selected)') : '(none)';
     }
     if (!value || String(value).trim().length === 0) {
@@ -530,10 +551,10 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
 
           {!noRoutesConfigured && step === 'route' && (
             <div className={styles.stepContent}>
-              {lastRouteEntry && (
+              {lastRouteEntry && lastRoute && (
                 <div className={styles.lastRouteBox}>
                   <span className={styles.lastRouteText}>
-                    Last used: {lastRouteEntry.label}
+                    Last used: {lastRouteEntry.label}{lastRoute.libraryName ? ` \u203a ${lastRoute.libraryName}` : ''}
                   </span>
                   <button type="button" className={styles.primaryButton} onClick={handleUseLastRoute}>
                     Use this again
@@ -552,7 +573,7 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
                 onChange={(e) => handleSelectSite(e.target.value)}
               >
                 <option value="" disabled>Select a site</option>
-                {props.targetSites.map((entry) => (
+                {sortedTargetSites.map((entry) => (
                   <option key={entry.url} value={entry.url}>{entry.label}</option>
                 ))}
               </select>

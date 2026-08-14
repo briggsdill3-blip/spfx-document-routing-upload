@@ -9,6 +9,7 @@ export interface ISiteEntryChipInputProps {
   label: string;
   entries: ISiteEntry[];
   sp: SPFI;
+  accentColor?: string;
   onChange: (entries: ISiteEntry[]) => void;
 }
 
@@ -22,6 +23,10 @@ const SiteEntryChipInput: React.FunctionComponent<ISiteEntryChipInputProps> = (p
   const [inputValue, setInputValue] = useState<string>('');
   const [expandedUrl, setExpandedUrl] = useState<string>('');
   const [librariesByUrl, setLibrariesByUrl] = useState<Record<string, LibraryState>>({});
+
+  const wrapperStyle: React.CSSProperties = props.accentColor
+    ? ({ '--scix-pane-accent': props.accentColor } as React.CSSProperties)
+    : {};
 
   const addEntry = (): void => {
     const trimmed = inputValue.trim();
@@ -104,7 +109,7 @@ const SiteEntryChipInput: React.FunctionComponent<ISiteEntryChipInputProps> = (p
   };
 
   return (
-    <div className={styles.chipInputWrapper}>
+    <div className={styles.chipInputWrapper} style={wrapperStyle}>
       <div className={styles.fieldLabel}>{props.label}</div>
 
       <div className={styles.inputRow}>

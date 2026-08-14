@@ -160,10 +160,19 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
   }
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
+    const themePalette = this._theme ? this._theme.palette : undefined;
+    const themeColors = this._theme ? this._theme.semanticColors : undefined;
+    const accentDefault: string = (themePalette && themePalette.themePrimary) || FALLBACK_ACCENT;
+    const tileBgDefault: string = (themeColors && themeColors.bodyBackground) || FALLBACK_TILE_BG;
+    const panelBgDefault: string = (themeColors && themeColors.bodyBackground) || FALLBACK_PANEL_BG;
+    const textDefault: string = (themeColors && themeColors.bodyText) || FALLBACK_TEXT;
+    const borderDefault: string = (themeColors && themeColors.bodyDivider) || FALLBACK_BORDER;
+
     this._targetSitesField = new PropertyPaneSiteEntryChipInputField('targetSites', {
       label: strings.TargetSitesFieldLabel,
       entries: this.properties.targetSites || [],
       sp: this._sp,
+      accentColor: accentDefault,
       onPropertyChange: (propertyPath: string, newValue: ISiteEntry[]) => {
         this.properties.targetSites = newValue;
         this.render();
@@ -173,14 +182,6 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
         }
       }
     });
-
-    const themePalette = this._theme ? this._theme.palette : undefined;
-    const themeColors = this._theme ? this._theme.semanticColors : undefined;
-    const accentDefault: string = (themePalette && themePalette.themePrimary) || FALLBACK_ACCENT;
-    const tileBgDefault: string = (themeColors && themeColors.bodyBackground) || FALLBACK_TILE_BG;
-    const panelBgDefault: string = (themeColors && themeColors.bodyBackground) || FALLBACK_PANEL_BG;
-    const textDefault: string = (themeColors && themeColors.bodyText) || FALLBACK_TEXT;
-    const borderDefault: string = (themeColors && themeColors.bodyDivider) || FALLBACK_BORDER;
 
     const useThemeColors = this.properties.useThemeColors !== undefined ? this.properties.useThemeColors : true;
 
