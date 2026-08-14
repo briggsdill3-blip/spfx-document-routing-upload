@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Web } from '@pnp/sp/webs';
 import { Icon } from '@fluentui/react/lib/Icon';
 import { Panel, PanelType } from '@fluentui/react/lib/Panel';
@@ -613,21 +614,28 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
     return String(value);
   };
 
+  const floatingButtonElement = (
+    <button
+      type="button"
+      className={styles.floatingButton}
+      style={cssVars}
+      onClick={openPanel}
+      title={displayDescription}
+    >
+      <span className={styles.floatingIcon}>
+        <Icon iconName={iconName} />
+      </span>
+      <span className={styles.floatingLabel}>
+        {props.showTitle && displayTitle}
+      </span>
+    </button>
+  );
+
   return (
     <section className={styles.documentUploadRouter} style={cssVars}>
-      <button
-        type="button"
-        className={styles.floatingButton}
-        onClick={openPanel}
-        title={displayDescription}
-      >
-        <span className={styles.floatingIcon}>
-          <Icon iconName={iconName} />
-        </span>
-        <span className={styles.floatingLabel}>
-          {props.showTitle && displayTitle}
-        </span>
-      </button>
+      {typeof document !== 'undefined'
+        ? createPortal(floatingButtonElement, document.body)
+        : floatingButtonElement}
 
       <Panel
         isOpen={isPanelOpen}
