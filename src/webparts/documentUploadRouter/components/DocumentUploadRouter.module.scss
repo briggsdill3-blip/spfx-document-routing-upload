@@ -21,7 +21,7 @@
   border: none;
   border-radius: 100px;
   padding: 14px 20px;
-  font-family: inherit;
+  font-family: var(--dur-font, "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -79,7 +79,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--dur-muted-bg, rgba(255, 255, 255, 0.1));
   color: var(--dur-text-secondary, #B8B8B0);
   font-size: 11px;
   flex-shrink: 0;
@@ -113,7 +113,7 @@
 }
 
 .introNote {
-  background-color: rgba(255, 255, 255, 0.07);
+  background-color: var(--dur-muted-bg, rgba(255, 255, 255, 0.07));
   border: 1px solid var(--dur-border, #3A3A3A);
   border-radius: 6px;
   padding: 12px 14px;
@@ -136,7 +136,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background-color: var(--dur-bg-surface, #1E1E1E);
+  background-color: var(--dur-muted-bg, #1E1E1E);
   border-radius: 6px;
   padding: 10px 12px;
   margin-bottom: 8px;
@@ -176,7 +176,7 @@
   padding: 8px 10px;
   border: 1px solid var(--dur-border, #3A3A3A);
   border-radius: 6px;
-  background-color: var(--dur-bg-surface, #1E1E1E);
+  background-color: var(--dur-field-bg, #1E1E1E);
   color: var(--dur-text, #F5F5F0);
   font-size: 13px;
   font-family: inherit;
@@ -357,7 +357,7 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background-color: rgba(255, 255, 255, 0.07);
+  background-color: var(--dur-muted-bg, rgba(255, 255, 255, 0.07));
   border: 1px solid var(--dur-border, #3A3A3A);
   border-radius: 6px;
   padding: 12px 14px;

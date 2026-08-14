@@ -12,6 +12,7 @@ import type { ISiteEntry } from './ISiteEntry';
 
 const FALLBACK_ACCENT = '#BF9B30';
 const FALLBACK_TILE_BG = '#1E1E1E';
+const FONT_STACK = '"Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif';
 const LAST_ROUTE_STORAGE_KEY = 'documentUploadRouter.lastRoute';
 const CHUNK_THRESHOLD_BYTES = 10 * 1024 * 1024;
 
@@ -434,16 +435,27 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
     ? props.panelBorderColorOverride
     : (themeColors ? (themeColors.bodyDivider || '#3A3A3A') : '#3A3A3A');
 
+  const fieldBackgroundColor = !useThemeColors && props.fieldBackgroundColorOverride && props.fieldBackgroundColorOverride.trim().length > 0
+    ? props.fieldBackgroundColorOverride
+    : (themeColors ? themeColors.bodyBackground : '#1E1E1E');
+
+  const mutedBackgroundColor = !useThemeColors && props.mutedBackgroundColorOverride && props.mutedBackgroundColorOverride.trim().length > 0
+    ? props.mutedBackgroundColorOverride
+    : (themeColors ? (themeColors.bodyBackgroundHovered || themeColors.bodyBackground) : 'rgba(255, 255, 255, 0.07)');
+
   const cssVars: React.CSSProperties = {
     '--dur-text': panelTextColor,
     '--dur-text-secondary': themeColors ? (themeColors.bodySubtext || panelTextColor) : '#B8B8B0',
     '--dur-border': panelBorderColor,
     '--dur-accent-text': themePalette ? themePalette.white : '#1E1E1E',
     '--dur-bg-surface': panelBackgroundColor,
+    '--dur-field-bg': fieldBackgroundColor,
+    '--dur-muted-bg': mutedBackgroundColor,
     '--dur-error-text': themeColors ? (themeColors.errorText || '#C86A6A') : '#C86A6A',
     '--dur-error-bg': themeColors ? (themeColors.errorBackground || 'rgba(163, 61, 61, 0.15)') : 'rgba(163, 61, 61, 0.15)',
     '--dur-accent': accentColor,
-    '--dur-tile-bg': tileBackgroundColor
+    '--dur-tile-bg': tileBackgroundColor,
+    '--dur-font': FONT_STACK
   } as React.CSSProperties;
 
   const displayTitle = props.customTitle && props.customTitle.trim().length > 0

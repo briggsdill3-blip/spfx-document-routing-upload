@@ -40,13 +40,12 @@ export interface IDocumentUploadRouterWebPartProps {
   panelBackgroundColorOverride: string;
   panelTextColorOverride: string;
   panelBorderColorOverride: string;
+  fieldBackgroundColorOverride: string;
+  mutedBackgroundColorOverride: string;
 }
 
 const FALLBACK_ACCENT = '#BF9B30';
 const FALLBACK_TILE_BG = '#1E1E1E';
-const FALLBACK_PANEL_BG = '#1E1E1E';
-const FALLBACK_TEXT = '#F5F5F0';
-const FALLBACK_BORDER = '#3A3A3A';
 
 const ICON_OPTIONS = [
   { key: 'CloudUpload', text: 'Cloud upload' },
@@ -91,7 +90,9 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
         tileBackgroundColorOverride: this.properties.tileBackgroundColorOverride || '',
         panelBackgroundColorOverride: this.properties.panelBackgroundColorOverride || '',
         panelTextColorOverride: this.properties.panelTextColorOverride || '',
-        panelBorderColorOverride: this.properties.panelBorderColorOverride || ''
+        panelBorderColorOverride: this.properties.panelBorderColorOverride || '',
+        fieldBackgroundColorOverride: this.properties.fieldBackgroundColorOverride || '',
+        mutedBackgroundColorOverride: this.properties.mutedBackgroundColorOverride || ''
       }
     );
 
@@ -144,7 +145,7 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
   }
 
   protected get dataVersion(): Version {
-    return Version.parse('3.1');
+    return Version.parse('3.2');
   }
 
   protected onPropertyPaneFieldChanged(propertyPath: string, oldValue: unknown, newValue: unknown): void {
@@ -164,9 +165,11 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
     const themeColors = this._theme ? this._theme.semanticColors : undefined;
     const accentDefault: string = (themePalette && themePalette.themePrimary) || FALLBACK_ACCENT;
     const tileBgDefault: string = (themeColors && themeColors.bodyBackground) || FALLBACK_TILE_BG;
-    const panelBgDefault: string = (themeColors && themeColors.bodyBackground) || FALLBACK_PANEL_BG;
-    const textDefault: string = (themeColors && themeColors.bodyText) || FALLBACK_TEXT;
-    const borderDefault: string = (themeColors && themeColors.bodyDivider) || FALLBACK_BORDER;
+    const panelBgDefault: string = (themeColors && themeColors.bodyBackground) || FALLBACK_TILE_BG;
+    const textDefault: string = (themeColors && themeColors.bodyText) || '#F5F5F0';
+    const borderDefault: string = (themeColors && themeColors.bodyDivider) || '#3A3A3A';
+    const fieldBgDefault: string = (themeColors && themeColors.bodyBackground) || FALLBACK_TILE_BG;
+    const mutedBgDefault: string = (themeColors && (themeColors.bodyBackgroundHovered || themeColors.bodyBackground)) || '#2A2A2A';
 
     this._targetSitesField = new PropertyPaneSiteEntryChipInputField('targetSites', {
       label: strings.TargetSitesFieldLabel,
@@ -197,43 +200,66 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
       appearanceFields.push(
         PropertyFieldColorPicker('accentColorOverride', {
           label: 'Accent Color',
+          description: 'Buttons, links, the progress bar, and the active step indicator throughout the form.',
           selectedColor: this.properties.accentColorOverride || accentDefault,
           onPropertyChange: this._handleColorFieldChange.bind(this),
           properties: this.properties,
           key: 'accentColorOverrideField',
-          style: PropertyFieldColorPickerStyle.Full
+          style: PropertyFieldColorPickerStyle.Inline
         }) as IPropertyPaneField<unknown>,
         PropertyFieldColorPicker('tileBackgroundColorOverride', {
           label: 'Floating Button Background',
+          description: 'The background behind the floating button itself, before it is clicked.',
           selectedColor: this.properties.tileBackgroundColorOverride || tileBgDefault,
           onPropertyChange: this._handleColorFieldChange.bind(this),
           properties: this.properties,
           key: 'tileBackgroundColorOverrideField',
-          style: PropertyFieldColorPickerStyle.Full
+          style: PropertyFieldColorPickerStyle.Inline
         }) as IPropertyPaneField<unknown>,
         PropertyFieldColorPicker('panelBackgroundColorOverride', {
           label: 'Panel Background',
+          description: 'The main background of the upload panel that opens.',
           selectedColor: this.properties.panelBackgroundColorOverride || panelBgDefault,
           onPropertyChange: this._handleColorFieldChange.bind(this),
           properties: this.properties,
           key: 'panelBackgroundColorOverrideField',
-          style: PropertyFieldColorPickerStyle.Full
+          style: PropertyFieldColorPickerStyle.Inline
         }) as IPropertyPaneField<unknown>,
         PropertyFieldColorPicker('panelTextColorOverride', {
           label: 'Panel Text',
+          description: 'Body text color throughout the panel.',
           selectedColor: this.properties.panelTextColorOverride || textDefault,
           onPropertyChange: this._handleColorFieldChange.bind(this),
           properties: this.properties,
           key: 'panelTextColorOverrideField',
-          style: PropertyFieldColorPickerStyle.Full
+          style: PropertyFieldColorPickerStyle.Inline
         }) as IPropertyPaneField<unknown>,
         PropertyFieldColorPicker('panelBorderColorOverride', {
           label: 'Panel Borders',
+          description: 'Dividers, input outlines, and card borders throughout the panel.',
           selectedColor: this.properties.panelBorderColorOverride || borderDefault,
           onPropertyChange: this._handleColorFieldChange.bind(this),
           properties: this.properties,
           key: 'panelBorderColorOverrideField',
-          style: PropertyFieldColorPickerStyle.Full
+          style: PropertyFieldColorPickerStyle.Inline
+        }) as IPropertyPaneField<unknown>,
+        PropertyFieldColorPicker('fieldBackgroundColorOverride', {
+          label: 'Field Background',
+          description: 'Background of text inputs, dropdowns, and the file picker inside the form.',
+          selectedColor: this.properties.fieldBackgroundColorOverride || fieldBgDefault,
+          onPropertyChange: this._handleColorFieldChange.bind(this),
+          properties: this.properties,
+          key: 'fieldBackgroundColorOverrideField',
+          style: PropertyFieldColorPickerStyle.Inline
+        }) as IPropertyPaneField<unknown>,
+        PropertyFieldColorPicker('mutedBackgroundColorOverride', {
+          label: 'Muted Background',
+          description: 'Background for informational banners, the step indicator\'s inactive dots, and the last-used-route box.',
+          selectedColor: this.properties.mutedBackgroundColorOverride || mutedBgDefault,
+          onPropertyChange: this._handleColorFieldChange.bind(this),
+          properties: this.properties,
+          key: 'mutedBackgroundColorOverrideField',
+          style: PropertyFieldColorPickerStyle.Inline
         }) as IPropertyPaneField<unknown>
       );
     }

@@ -20,4 +20,6 @@ export interface IDocumentUploadRouterProps {
   panelBackgroundColorOverride: string;
   panelTextColorOverride: string;
   panelBorderColorOverride: string;
+  fieldBackgroundColorOverride: string;
+  mutedBackgroundColorOverride: string;
 }
