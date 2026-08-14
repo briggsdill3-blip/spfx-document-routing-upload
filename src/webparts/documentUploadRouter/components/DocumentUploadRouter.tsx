@@ -293,9 +293,11 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
         const chunkResult = await list.rootFolder.files.addChunked(
           selectedFile.name,
           selectedFile,
-          (data: any) => {
-            if (data && typeof data.blockNumber === 'number' && typeof data.totalBlocks === 'number' && data.totalBlocks > 0) {
-              setUploadProgress(Math.round((data.blockNumber / data.totalBlocks) * 100));
+          {
+            progress: (data: { blockNumber: number; totalBlocks: number }) => {
+              if (data && data.totalBlocks > 0) {
+                setUploadProgress(Math.round((data.blockNumber / data.totalBlocks) * 100));
+              }
             }
           }
         );
