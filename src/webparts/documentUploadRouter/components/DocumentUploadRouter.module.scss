@@ -266,3 +266,24 @@
   font-size: 24px;
   color: var(--dur-accent, #BF9B30);
 }
+
+.fileList {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  font-size: 12px;
+  color: var(--dur-text-secondary, #B8B8B0);
+
+  li {
+    padding: 2px 0;
+  }
+}
+
+.caveatNote {
+  background-color: var(--dur-bg-surface, #1E1E1E);
+  border-left: 2px solid var(--dur-border, #3A3A3A);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--dur-text-secondary, #B8B8B0);
+}

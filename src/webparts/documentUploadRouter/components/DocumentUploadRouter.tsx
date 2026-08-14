@@ -54,6 +54,13 @@ interface IPickedPerson extends IPersonaProps {
   loginName?: string;
 }
 
+interface IFileUploadResult {
+  fileName: string;
+  status: 'success' | 'error';
+  url?: string;
+  errorMessage?: string;
+}
+
 const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> = (props) => {
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(false);
   const [step, setStep] = useState<WizardStep>('route');
@@ -66,12 +73,12 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
   const [dynamicFields, setDynamicFields] = useState<IDynamicField[]>([]);
   const [fieldsLoadState, setFieldsLoadState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [fieldValues, setFieldValues] = useState<Record<string, unknown>>({});
-  const [selectedFile, setSelectedFile] = useState<File | undefined>(undefined);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [formError, setFormError] = useState<string>('');
 
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const [uploadedFileUrl, setUploadedFileUrl] = useState<string>('');
-  const [uploadErrorMessage, setUploadErrorMessage] = useState<string>('');
+  const [currentFileIndex, setCurrentFileIndex] = useState<number>(0);
+  const [totalFilesToUpload, setTotalFilesToUpload] = useState<number>(0);
+  const [uploadResults, setUploadResults] = useState<IFileUploadResult[]>([]);
   const [isPermissionError, setIsPermissionError] = useState<boolean>(false);
 
   useEffect(() => {
@@ -109,11 +116,11 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
     setDynamicFields([]);
     setFieldsLoadState('idle');
     setFieldValues({});
-    setSelectedFile(undefined);
+    setSelectedFiles([]);
     setFormError('');
-    setUploadProgress(0);
-    setUploadedFileUrl('');
-    setUploadErrorMessage('');
+    setCurrentFileIndex(0);
+    setTotalFilesToUpload(0);
+    setUploadResults([]);
     setIsPermissionError(false);
   };
 
@@ -229,6 +236,14 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
     setStep('form');
   };
 
+  const handleFilesSelected = (fileList: FileList | null): void => {
+    if (!fileList) {
+      setSelectedFiles([]);
+      return;
+    }
+    setSelectedFiles(Array.from(fileList));
+  };
+
   const updateFieldValue = (internalName: string, value: unknown): void => {
     setFieldValues((prev) => ({ ...prev, [internalName]: value }));
   };
@@ -244,8 +259,8 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
   };
 
   const validateForm = (): boolean => {
-    if (!selectedFile) {
-      setFormError('Choose a file before continuing.');
+    if (selectedFiles.length === 0) {
+      setFormError('Choose at least one file before continuing.');
       return false;
     }
     for (const field of dynamicFields) {
@@ -273,43 +288,20 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
     }
   };
 
-  const doUpload = async (): Promise<void> => {
-    if (!selectedSite || !selectedFile) {
-      return;
-    }
-
-    setStep('uploading');
-    setUploadProgress(0);
-    setUploadErrorMessage('');
-    setIsPermissionError(false);
-
+  const uploadOneFile = async (web: ReturnType<typeof Web>, file: File): Promise<IFileUploadResult> => {
     try {
-      const web = Web([props.sp.web, selectedSite.url]);
       const list = web.lists.getByTitle(selectedLibrary);
-
       let fileServerRelativeUrl = '';
 
-      if (selectedFile.size > CHUNK_THRESHOLD_BYTES) {
-        const chunkResult = await list.rootFolder.files.addChunked(
-          selectedFile.name,
-          selectedFile,
-          {
-            progress: (data: { blockNumber: number; totalBlocks: number }) => {
-              if (data && data.totalBlocks > 0) {
-                setUploadProgress(Math.round((data.blockNumber / data.totalBlocks) * 100));
-              }
-            }
-          }
-        );
+      if (file.size > CHUNK_THRESHOLD_BYTES) {
+        const chunkResult = await list.rootFolder.files.addChunked(file.name, file);
         fileServerRelativeUrl = chunkResult.ServerRelativeUrl;
       } else {
-        const addResult = await list.rootFolder.files.addUsingPath(selectedFile.name, selectedFile, { Overwrite: false });
-        setUploadProgress(100);
+        const addResult = await list.rootFolder.files.addUsingPath(file.name, file, { Overwrite: false });
         fileServerRelativeUrl = addResult.ServerRelativeUrl;
       }
 
       const item = await web.getFileByServerRelativePath(fileServerRelativeUrl).getItem();
-
       const updatePayload: Record<string, unknown> = {};
 
       for (const field of dynamicFields) {
@@ -341,23 +333,62 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
 
       await item.update(updatePayload);
 
-      setUploadedFileUrl(fileServerRelativeUrl);
-      setStep('success');
+      return { fileName: file.name, status: 'success', url: fileServerRelativeUrl };
     } catch (err) {
-      console.error('Upload failed', err);
+      console.error(`Upload failed for ${file.name}`, err);
       const message = err && (err as Error).message ? (err as Error).message : '';
       const looksLikePermissionError = message.indexOf('403') !== -1
         || message.toLowerCase().indexOf('access denied') !== -1
         || message.toLowerCase().indexOf('forbidden') !== -1;
 
-      setIsPermissionError(looksLikePermissionError);
-      setUploadErrorMessage(
-        looksLikePermissionError
-          ? "You don't have access to upload here. Contact your KM team to request access."
-          : 'Something went wrong uploading this file. You can try again.'
-      );
-      setStep('error');
+      if (looksLikePermissionError) {
+        setIsPermissionError(true);
+      }
+
+      return {
+        fileName: file.name,
+        status: 'error',
+        errorMessage: looksLikePermissionError
+          ? "No access to upload here."
+          : 'Something went wrong uploading this file.'
+      };
     }
+  };
+
+  const doUpload = async (filesToUpload?: File[]): Promise<void> => {
+    if (!selectedSite || selectedFiles.length === 0) {
+      return;
+    }
+
+    const files = filesToUpload || selectedFiles;
+
+    setStep('uploading');
+    setCurrentFileIndex(0);
+    setTotalFilesToUpload(files.length);
+    setIsPermissionError(false);
+
+    const web = Web([props.sp.web, selectedSite.url]);
+    const results: IFileUploadResult[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      setCurrentFileIndex(i + 1);
+      const result = await uploadOneFile(web, files[i]);
+      results.push(result);
+    }
+
+    setUploadResults((prev) => {
+      const carriedOver = filesToUpload ? prev.filter((r) => r.status === 'success') : [];
+      return [...carriedOver, ...results];
+    });
+
+    const anyFailed = results.some((r) => r.status === 'error');
+    setStep(anyFailed ? 'error' : 'success');
+  };
+
+  const handleRetryFailed = (): void => {
+    const failedNames = uploadResults.filter((r) => r.status === 'error').map((r) => r.fileName);
+    const filesToRetry = selectedFiles.filter((f) => failedNames.indexOf(f.name) !== -1);
+    doUpload(filesToRetry).catch((err) => console.error(err));
   };
 
   const themeColors = props.theme ? props.theme.semanticColors : undefined;
@@ -520,6 +551,10 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
     return String(value);
   };
 
+  const successCount = uploadResults.filter((r) => r.status === 'success').length;
+  const failedResults = uploadResults.filter((r) => r.status === 'error');
+  const uploadPercent = totalFilesToUpload > 0 ? Math.round((currentFileIndex / totalFilesToUpload) * 100) : 0;
+
   return (
     <section className={styles.documentUploadRouter} style={cssVars}>
       <button
@@ -650,16 +685,26 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
                 </button>
               </div>
 
-              <label className={styles.fieldLabel} htmlFor="dur-file-input">File</label>
-              <p className={styles.fieldHint}>Choose the document to upload.</p>
+              <label className={styles.fieldLabel} htmlFor="dur-file-input">Files</label>
+              <p className={styles.fieldHint}>Choose one or more documents to upload.</p>
               <input
                 id="dur-file-input"
                 type="file"
+                multiple
                 className={styles.fileInput}
-                onChange={(e) => setSelectedFile(e.target.files && e.target.files[0] ? e.target.files[0] : undefined)}
+                onChange={(e) => handleFilesSelected(e.target.files)}
               />
-              {selectedFile && (
-                <p className={styles.fileChosenText}>Selected: {selectedFile.name}</p>
+              {selectedFiles.length > 0 && (
+                <ul className={styles.fileList}>
+                  {selectedFiles.map((f) => (
+                    <li key={f.name}>{f.name}</li>
+                  ))}
+                </ul>
+              )}
+              {selectedFiles.length > 1 && (
+                <div className={styles.caveatNote}>
+                  All {selectedFiles.length} files will be tagged with the same details you enter below.
+                </div>
               )}
 
               {fieldsLoadState === 'loading' && (
@@ -703,8 +748,8 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
               <table className={styles.reviewTable}>
                 <tbody>
                   <tr>
-                    <td className={styles.reviewLabel}>File</td>
-                    <td>{selectedFile ? selectedFile.name : ''}</td>
+                    <td className={styles.reviewLabel}>Files</td>
+                    <td>{selectedFiles.map((f) => f.name).join(', ')}</td>
                   </tr>
                   <tr>
                     <td className={styles.reviewLabel}>Going to</td>
@@ -718,6 +763,12 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
                   ))}
                 </tbody>
               </table>
+
+              {selectedFiles.length > 1 && (
+                <div className={styles.caveatNote}>
+                  All {selectedFiles.length} files above will get these same details.
+                </div>
+              )}
 
               <div className={styles.stepActions}>
                 <button type="button" className={styles.secondaryButton} onClick={() => setStep('form')}>
@@ -734,9 +785,13 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
             <div className={styles.stepContent}>
               <p className={styles.fieldLabel}>Uploading, don't close this window</p>
               <div className={styles.progressTrack}>
-                <div className={styles.progressFill} style={{ width: `${uploadProgress}%` }} />
+                <div className={styles.progressFill} style={{ width: `${uploadPercent}%` }} />
               </div>
-              <p className={styles.fieldHint}>{uploadProgress}%</p>
+              <p className={styles.fieldHint}>
+                {totalFilesToUpload > 1
+                  ? `File ${currentFileIndex} of ${totalFilesToUpload}`
+                  : 'Uploading...'}
+              </p>
             </div>
           )}
 
@@ -744,16 +799,22 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
             <div className={styles.stepContent}>
               <div className={styles.successState}>
                 <Icon iconName="CheckMark" className={styles.successIcon} />
-                <p>File uploaded.</p>
-                {uploadedFileUrl && (
-                  <a href={uploadedFileUrl} target="_blank" rel="noreferrer" className={styles.changeLink}>
-                    Open the file
-                  </a>
-                )}
+                <p>{successCount === 1 ? 'File uploaded.' : `${successCount} files uploaded.`}</p>
+                <ul className={styles.fileList}>
+                  {uploadResults.filter((r) => r.status === 'success').map((r) => (
+                    <li key={r.fileName}>
+                      {r.url ? (
+                        <a href={r.url} target="_blank" rel="noreferrer" className={styles.changeLink}>
+                          {r.fileName}
+                        </a>
+                      ) : r.fileName}
+                    </li>
+                  ))}
+                </ul>
               </div>
               <div className={styles.stepActions}>
                 <button type="button" className={styles.primaryButton} onClick={openPanel}>
-                  Upload another file
+                  Upload more files
                 </button>
               </div>
             </div>
@@ -761,14 +822,28 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
 
           {step === 'error' && (
             <div className={styles.stepContent}>
-              <div className={styles.errorState}>{uploadErrorMessage}</div>
+              <div className={styles.errorState}>
+                {failedResults.length === selectedFiles.length
+                  ? 'None of the files uploaded.'
+                  : `${successCount} of ${selectedFiles.length} files uploaded. The rest failed:`}
+              </div>
+              <ul className={styles.fileList}>
+                {failedResults.map((r) => (
+                  <li key={r.fileName}>{r.fileName} — {r.errorMessage}</li>
+                ))}
+              </ul>
+              {isPermissionError && (
+                <div className={styles.errorState}>
+                  Contact your KM team to request access to this library.
+                </div>
+              )}
               <div className={styles.stepActions}>
                 <button type="button" className={styles.secondaryButton} onClick={() => setStep('form')}>
                   Back to edit
                 </button>
                 {!isPermissionError && (
-                  <button type="button" className={styles.primaryButton} onClick={() => { doUpload().catch((err) => console.error(err)); }}>
-                    Try again
+                  <button type="button" className={styles.primaryButton} onClick={handleRetryFailed}>
+                    Retry failed files
                   </button>
                 )}
               </div>
