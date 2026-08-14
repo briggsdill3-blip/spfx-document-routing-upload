@@ -59,6 +59,7 @@ interface IFileUploadResult {
   status: 'success' | 'error';
   url?: string;
   errorMessage?: string;
+  rawError?: string;
 }
 
 const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> = (props) => {
@@ -336,10 +337,10 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
       return { fileName: file.name, status: 'success', url: fileServerRelativeUrl };
     } catch (err) {
       console.error(`Upload failed for ${file.name}`, err);
-      const message = err && (err as Error).message ? (err as Error).message : '';
-      const looksLikePermissionError = message.indexOf('403') !== -1
-        || message.toLowerCase().indexOf('access denied') !== -1
-        || message.toLowerCase().indexOf('forbidden') !== -1;
+      const rawMessage = err && (err as Error).message ? (err as Error).message : String(err);
+      const looksLikePermissionError = rawMessage.indexOf('403') !== -1
+        || rawMessage.toLowerCase().indexOf('access denied') !== -1
+        || rawMessage.toLowerCase().indexOf('forbidden') !== -1;
 
       if (looksLikePermissionError) {
         setIsPermissionError(true);
@@ -349,8 +350,9 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
         fileName: file.name,
         status: 'error',
         errorMessage: looksLikePermissionError
-          ? "No access to upload here."
-          : 'Something went wrong uploading this file.'
+          ? 'No access to upload here.'
+          : 'Something went wrong uploading this file.',
+        rawError: rawMessage
       };
     }
   };
@@ -703,7 +705,10 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
               )}
               {selectedFiles.length > 1 && (
                 <div className={styles.caveatNote}>
-                  All {selectedFiles.length} files will be tagged with the same details you enter below.
+                  <Icon iconName="Info" className={styles.caveatIcon} />
+                  <span>
+                    <strong>Same details for all {selectedFiles.length} files.</strong> Whatever you fill in below gets applied to every file in this batch, there's no way to give each file different values in one upload.
+                  </span>
                 </div>
               )}
 
@@ -766,7 +771,10 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
 
               {selectedFiles.length > 1 && (
                 <div className={styles.caveatNote}>
-                  All {selectedFiles.length} files above will get these same details.
+                  <Icon iconName="Info" className={styles.caveatIcon} />
+                  <span>
+                    <strong>All {selectedFiles.length} files above get these exact same details.</strong> This can't be undone per-file after upload without editing each one individually in the library.
+                  </span>
                 </div>
               )}
 
@@ -829,7 +837,12 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
               </div>
               <ul className={styles.fileList}>
                 {failedResults.map((r) => (
-                  <li key={r.fileName}>{r.fileName} — {r.errorMessage}</li>
+                  <li key={r.fileName}>
+                    {r.fileName} — {r.errorMessage}
+                    {r.rawError && (
+                      <div className={styles.rawErrorText}>{r.rawError}</div>
+                    )}
+                  </li>
                 ))}
               </ul>
               {isPermissionError && (

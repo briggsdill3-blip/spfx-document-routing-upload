@@ -280,10 +280,28 @@
 }
 
 .caveatNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   background-color: var(--dur-bg-surface, #1E1E1E);
   border-left: 2px solid var(--dur-border, #3A3A3A);
   border-radius: 4px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   font-size: 12px;
+  line-height: 1.5;
   color: var(--dur-text-secondary, #B8B8B0);
+}
+
+.caveatIcon {
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--dur-text-secondary, #B8B8B0);
+}
+
+.rawErrorText {
+  font-size: 11px;
+  color: var(--dur-text-secondary, #B8B8B0);
+  margin-top: 2px;
+  word-break: break-word;
 }
