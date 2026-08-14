@@ -81,6 +81,8 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
   const [totalFilesToUpload, setTotalFilesToUpload] = useState<number>(0);
   const [uploadResults, setUploadResults] = useState<IFileUploadResult[]>([]);
   const [isPermissionError, setIsPermissionError] = useState<boolean>(false);
+  const [uploadedToSiteLabel, setUploadedToSiteLabel] = useState<string>('');
+  const [uploadedToLibrary, setUploadedToLibrary] = useState<string>('');
 
   useEffect(() => {
     try {
@@ -123,6 +125,8 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
     setTotalFilesToUpload(0);
     setUploadResults([]);
     setIsPermissionError(false);
+    setUploadedToSiteLabel('');
+    setUploadedToLibrary('');
   };
 
   const openPanel = (): void => {
@@ -378,6 +382,8 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
     setCurrentFileIndex(0);
     setTotalFilesToUpload(files.length);
     setIsPermissionError(false);
+    setUploadedToSiteLabel(selectedSite.label);
+    setUploadedToLibrary(selectedLibrary);
 
     const web = Web([props.sp.web, selectedSite.url]);
     const results: IFileUploadResult[] = [];
@@ -452,6 +458,50 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
     : 'CloudUpload';
 
   const noRoutesConfigured = props.targetSites.length === 0;
+
+  const successCount = uploadResults.filter((r) => r.status === 'success').length;
+  const failedResults = uploadResults.filter((r) => r.status === 'error');
+  const uploadPercent = totalFilesToUpload > 0 ? Math.round((currentFileIndex / totalFilesToUpload) * 100) : 0;
+
+  const firstSuccessResult = uploadResults.filter((r) => r.status === 'success' && r.url)[0];
+  const firstSuccessUrl = firstSuccessResult ? firstSuccessResult.url : undefined;
+  const libraryFolderUrl = firstSuccessUrl ? firstSuccessUrl.substring(0, firstSuccessUrl.lastIndexOf('/')) : '';
+
+  const hasRequiredFields = dynamicFields.some((f) => f.required);
+
+  const stepNumber = (): number => {
+    if (step === 'route' || step === 'library') {
+      return 1;
+    }
+    if (step === 'form') {
+      return 2;
+    }
+    return 3;
+  };
+
+  const renderStepIndicator = (): JSX.Element => {
+    const current = stepNumber();
+    const stepLabels = ['Choose location', 'File and details', 'Review'];
+
+    return (
+      <div className={styles.stepIndicator}>
+        {stepLabels.map((label, index) => {
+          const num = index + 1;
+          const isActive = num === current;
+          const isDone = num < current;
+          return (
+            <React.Fragment key={label}>
+              <span className={`${styles.stepDot} ${isActive ? styles.stepDotActive : ''} ${isDone ? styles.stepDotDone : ''}`}>
+                {isDone ? <Icon iconName="CheckMark" /> : num}
+              </span>
+              <span className={isActive ? styles.stepLabelActive : styles.stepLabel}>{label}</span>
+              {num < stepLabels.length && <span className={styles.stepConnector} />}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    );
+  };
 
   const renderDynamicField = (field: IDynamicField): JSX.Element => {
     const value = fieldValues[field.internalName];
@@ -563,10 +613,6 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
     return String(value);
   };
 
-  const successCount = uploadResults.filter((r) => r.status === 'success').length;
-  const failedResults = uploadResults.filter((r) => r.status === 'error');
-  const uploadPercent = totalFilesToUpload > 0 ? Math.round((currentFileIndex / totalFilesToUpload) * 100) : 0;
-
   return (
     <section className={styles.documentUploadRouter} style={cssVars}>
       <button
@@ -598,8 +644,14 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
             </div>
           )}
 
+          {!noRoutesConfigured && step !== 'uploading' && step !== 'success' && step !== 'error' && renderStepIndicator()}
+
           {!noRoutesConfigured && step === 'route' && (
             <div className={styles.stepContent}>
+              <div className={styles.introNote}>
+                Upload a document to a SharePoint library and tag it at the same time. Pick where it belongs, fill in the details, and it goes to the right place.
+              </div>
+
               {lastRouteEntry && lastRoute && (
                 <div className={styles.lastRouteBox}>
                   <span className={styles.lastRouteText}>
@@ -634,7 +686,7 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
               <div className={styles.breadcrumb}>
                 <span>{selectedSite.label}</span>
                 <button type="button" className={styles.changeLink} onClick={() => setStep('route')}>
-                  Change
+                  Change site
                 </button>
               </div>
 
@@ -693,7 +745,7 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
               <div className={styles.breadcrumb}>
                 <span>{selectedSite.label} &rsaquo; {selectedLibrary}</span>
                 <button type="button" className={styles.changeLink} onClick={() => setStep('library')}>
-                  Change
+                  Change library
                 </button>
               </div>
 
@@ -729,6 +781,12 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
                 <div className={styles.errorState}>
                   Couldn't load this library's columns. Try again, or contact your KM team.
                 </div>
+              )}
+
+              {fieldsLoadState === 'idle' && hasRequiredFields && (
+                <p className={styles.requiredLegend}>
+                  Fields marked <span className={styles.requiredMark}>*</span> must be filled in before you can continue.
+                </p>
               )}
 
               {fieldsLoadState === 'idle' && dynamicFields.map((field) => (
@@ -817,7 +875,19 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
             <div className={styles.stepContent}>
               <div className={styles.successState}>
                 <Icon iconName="CheckMark" className={styles.successIcon} />
-                <p>{successCount === 1 ? 'File uploaded.' : `${successCount} files uploaded.`}</p>
+                <p className={styles.successHeading}>
+                  {successCount === 1 ? 'File uploaded.' : `${successCount} files uploaded.`}
+                </p>
+                {uploadedToSiteLabel && uploadedToLibrary && (
+                  <p className={styles.fieldHint}>
+                    Uploaded to {uploadedToSiteLabel} &rsaquo; {uploadedToLibrary}
+                  </p>
+                )}
+                {libraryFolderUrl && (
+                  <a href={libraryFolderUrl} target="_blank" rel="noreferrer" className={styles.changeLink}>
+                    View library
+                  </a>
+                )}
                 <ul className={styles.fileList}>
                   {uploadResults.filter((r) => r.status === 'success').map((r) => (
                     <li key={r.fileName}>
@@ -845,6 +915,13 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
                   ? 'None of the files uploaded.'
                   : `${successCount} of ${selectedFiles.length} files uploaded. The rest failed:`}
               </div>
+
+              {uploadedToSiteLabel && uploadedToLibrary && (
+                <p className={styles.fieldHint}>
+                  Attempted upload to {uploadedToSiteLabel} &rsaquo; {uploadedToLibrary}
+                </p>
+              )}
+
               <ul className={styles.fileList}>
                 {failedResults.map((r) => (
                   <li key={r.fileName}>
@@ -855,16 +932,22 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
                   </li>
                 ))}
               </ul>
+
               {isPermissionError && (
                 <div className={styles.errorState}>
-                  Contact your KM team to request access to this library.
+                  Contact your KM team and let them know you need upload access to {uploadedToSiteLabel} &rsaquo; {uploadedToLibrary}.
                 </div>
               )}
+
               <div className={styles.stepActions}>
-                <button type="button" className={styles.secondaryButton} onClick={() => setStep('form')}>
-                  Back to edit
+                <button type="button" className={styles.secondaryButton} onClick={openPanel}>
+                  Start over
                 </button>
-                {!isPermissionError && (
+                {isPermissionError ? (
+                  <button type="button" className={styles.primaryButton} onClick={() => setStep('route')}>
+                    Pick a different library
+                  </button>
+                ) : (
                   <button type="button" className={styles.primaryButton} onClick={handleRetryFailed}>
                     Retry failed files
                   </button>
