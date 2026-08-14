@@ -5,10 +5,6 @@ declare interface IDocumentUploadRouterWebPartStrings {
   ShowTitleFieldLabel: string;
   CustomTitleFieldLabel: string;
   TargetSitesFieldLabel: string;
-  IncludeSystemListsFieldLabel: string;
-  GroupBySiteFieldLabel: string;
-  ExpandByDefaultFieldLabel: string;
-  StaleDaysThresholdFieldLabel: string;
   AppLocalEnvironmentSharePoint: string;
   AppLocalEnvironmentTeams: string;
   AppLocalEnvironmentOffice: string;

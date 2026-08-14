@@ -4,10 +4,12 @@ import { Version } from '@microsoft/sp-core-library';
 import {
   type IPropertyPaneConfiguration,
   PropertyPaneTextField,
-  PropertyPaneToggle
+  PropertyPaneToggle,
+  PropertyPaneDropdown
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
+import { initializeIcons } from '@fluentui/react/lib/Icons';
 import { PropertyFieldColorPicker, PropertyFieldColorPickerStyle } from '@pnp/spfx-property-controls/lib/PropertyFieldColorPicker';
 
 import { spfi, SPFx as spSPFx, SPFI } from '@pnp/sp';
@@ -24,27 +26,29 @@ import { PropertyPaneSiteEntryChipInputField } from './controls/SiteEntryChipInp
 
 export interface IDocumentUploadRouterWebPartProps {
   targetSites: ISiteEntry[];
-  includeSystemLists: boolean;
-  groupBySite: boolean;
-  staleDaysThreshold: string;
   showTitle: boolean;
   customTitle: string;
-  expandByDefault: boolean;
-  enableRowStriping: boolean;
+  tileDescription: string;
+  tileIconName: string;
   accentColorOverride: string;
-  stripeColorOverride: string;
+  tileBackgroundColorOverride: string;
 }
 
 const FALLBACK_ACCENT = '#BF9B30';
-const FALLBACK_STRIPE = '#2A2A2A';
+const FALLBACK_TILE_BG = '#1E1E1E';
 
-const parseStaleDays = (raw: string): number => {
-  const parsed = parseInt(raw, 10);
-  if (isNaN(parsed) || parsed < 0) {
-    return 0;
-  }
-  return parsed;
-};
+const ICON_OPTIONS = [
+  { key: 'CloudUpload', text: 'Cloud upload' },
+  { key: 'Upload', text: 'Upload' },
+  { key: 'Page', text: 'Page' },
+  { key: 'Documentation', text: 'Documentation' },
+  { key: 'FabricFolder', text: 'Folder' },
+  { key: 'Archive', text: 'Archive' },
+  { key: 'Send', text: 'Send' },
+  { key: 'Save', text: 'Save' },
+  { key: 'Attach', text: 'Attach' },
+  { key: 'DocumentSet', text: 'Document set' }
+];
 
 export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<IDocumentUploadRouterWebPartProps> {
 
@@ -66,15 +70,12 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
         userDisplayName: this.context.pageContext.user.displayName,
         sp: this._sp,
         targetSites: this.properties.targetSites || [],
-        includeSystemLists: this.properties.includeSystemLists || false,
-        groupBySite: this.properties.groupBySite !== undefined ? this.properties.groupBySite : true,
-        staleDaysThreshold: parseStaleDays(this.properties.staleDaysThreshold),
         showTitle: this.properties.showTitle !== undefined ? this.properties.showTitle : true,
         customTitle: this.properties.customTitle || '',
-        expandByDefault: this.properties.expandByDefault !== undefined ? this.properties.expandByDefault : true,
-        enableRowStriping: this.properties.enableRowStriping !== undefined ? this.properties.enableRowStriping : true,
+        tileDescription: this.properties.tileDescription || '',
+        tileIconName: this.properties.tileIconName || 'CloudUpload',
         accentColorOverride: this.properties.accentColorOverride || '',
-        stripeColorOverride: this.properties.stripeColorOverride || ''
+        tileBackgroundColorOverride: this.properties.tileBackgroundColorOverride || ''
       }
     );
 
@@ -82,6 +83,7 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
   }
 
   protected onInit(): Promise<void> {
+    initializeIcons();
     this._sp = spfi().using(spSPFx(this.context));
 
     return this._getEnvironmentMessage().then(message => {
@@ -126,7 +128,7 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
   }
 
   protected get dataVersion(): Version {
-    return Version.parse('1.0');
+    return Version.parse('2.0');
   }
 
   private _handleColorFieldChange(propertyPath: string, oldValue: unknown, newValue: unknown): void {
@@ -151,7 +153,7 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
     const themePalette = this._theme ? this._theme.palette : undefined;
     const themeColors = this._theme ? this._theme.semanticColors : undefined;
     const accentDefault: string = (themePalette && themePalette.themePrimary) || FALLBACK_ACCENT;
-    const stripeDefault: string = (themeColors && themeColors.bodyBackgroundHovered) || FALLBACK_STRIPE;
+    const tileBgDefault: string = (themeColors && themeColors.bodyBackground) || FALLBACK_TILE_BG;
 
     return {
       pages: [
@@ -172,42 +174,27 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
                   label: strings.CustomTitleFieldLabel,
                   description: 'Leave blank to use the default: Document Upload Router',
                   disabled: !this.properties.showTitle
+                }),
+                PropertyPaneTextField('tileDescription', {
+                  label: 'Tile Description',
+                  description: 'Short text shown on the button before it opens.'
+                }),
+                PropertyPaneDropdown('tileIconName', {
+                  label: 'Tile Icon',
+                  options: ICON_OPTIONS,
+                  selectedKey: this.properties.tileIconName || 'CloudUpload'
                 })
               ]
             },
             {
               groupName: strings.ConfigurationGroupName,
               groupFields: [
-                this._targetSitesField,
-                PropertyPaneToggle('includeSystemLists', {
-                  label: strings.IncludeSystemListsFieldLabel,
-                  onText: 'Shown',
-                  offText: 'Hidden'
-                }),
-                PropertyPaneToggle('groupBySite', {
-                  label: strings.GroupBySiteFieldLabel,
-                  onText: 'Grouped',
-                  offText: 'Flat list'
-                }),
-                PropertyPaneToggle('expandByDefault', {
-                  label: strings.ExpandByDefaultFieldLabel,
-                  onText: 'Expanded',
-                  offText: 'Collapsed'
-                }),
-                PropertyPaneTextField('staleDaysThreshold', {
-                  label: strings.StaleDaysThresholdFieldLabel,
-                  description: 'Flag libraries not modified within this many days. Leave blank or 0 to disable.'
-                })
+                this._targetSitesField
               ]
             },
             {
               groupName: 'Appearance',
               groupFields: [
-                PropertyPaneToggle('enableRowStriping', {
-                  label: 'Alternating Row Striping',
-                  onText: 'On',
-                  offText: 'Off'
-                }),
                 PropertyFieldColorPicker('accentColorOverride', {
                   label: 'Accent Color',
                   selectedColor: this.properties.accentColorOverride || accentDefault,
@@ -216,12 +203,12 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
                   key: 'accentColorOverrideField',
                   style: PropertyFieldColorPickerStyle.Full
                 }),
-                PropertyFieldColorPicker('stripeColorOverride', {
-                  label: 'Row Stripe Color',
-                  selectedColor: this.properties.stripeColorOverride || stripeDefault,
+                PropertyFieldColorPicker('tileBackgroundColorOverride', {
+                  label: 'Tile Background Color',
+                  selectedColor: this.properties.tileBackgroundColorOverride || tileBgDefault,
                   onPropertyChange: this._handleColorFieldChange.bind(this),
                   properties: this.properties,
-                  key: 'stripeColorOverrideField',
+                  key: 'tileBackgroundColorOverrideField',
                   style: PropertyFieldColorPickerStyle.Full
                 })
               ]

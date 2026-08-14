@@ -8,13 +8,10 @@ export interface IDocumentUploadRouterProps {
   userDisplayName: string;
   sp: SPFI;
   targetSites: ISiteEntry[];
-  includeSystemLists: boolean;
-  groupBySite: boolean;
-  staleDaysThreshold: number;
   showTitle: boolean;
   customTitle: string;
-  expandByDefault: boolean;
-  enableRowStriping: boolean;
+  tileDescription: string;
+  tileIconName: string;
   accentColorOverride: string;
-  stripeColorOverride: string;
+  tileBackgroundColorOverride: string;
 }
