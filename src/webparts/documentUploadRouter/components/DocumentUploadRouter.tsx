@@ -108,25 +108,36 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
 
   const themeColors = props.theme ? props.theme.semanticColors : undefined;
   const themePalette = props.theme ? props.theme.palette : undefined;
+  const useThemeColors = props.useThemeColors;
 
-  const accentColor = props.accentColorOverride && props.accentColorOverride.trim().length > 0
+  const accentColor = !useThemeColors && props.accentColorOverride && props.accentColorOverride.trim().length > 0
     ? props.accentColorOverride
     : (themePalette ? themePalette.themePrimary : FALLBACK_ACCENT);
 
-  const tileBackgroundColor = props.tileBackgroundColorOverride && props.tileBackgroundColorOverride.trim().length > 0
+  const tileBackgroundColor = !useThemeColors && props.tileBackgroundColorOverride && props.tileBackgroundColorOverride.trim().length > 0
     ? props.tileBackgroundColorOverride
     : (themeColors ? themeColors.bodyBackground : FALLBACK_TILE_BG);
 
+  const panelBackgroundColor = !useThemeColors && props.panelBackgroundColorOverride && props.panelBackgroundColorOverride.trim().length > 0
+    ? props.panelBackgroundColorOverride
+    : (themeColors ? themeColors.bodyBackground : '#1E1E1E');
+
+  const panelTextColor = !useThemeColors && props.panelTextColorOverride && props.panelTextColorOverride.trim().length > 0
+    ? props.panelTextColorOverride
+    : (themeColors ? themeColors.bodyText : '#F5F5F0');
+
+  const panelBorderColor = !useThemeColors && props.panelBorderColorOverride && props.panelBorderColorOverride.trim().length > 0
+    ? props.panelBorderColorOverride
+    : (themeColors ? (themeColors.bodyDivider || '#3A3A3A') : '#3A3A3A');
+
   const rootStyle: React.CSSProperties = {
-    ...(themeColors && themePalette ? {
-      '--dur-text': themeColors.bodyText,
-      '--dur-text-secondary': themeColors.bodySubtext || themeColors.bodyText,
-      '--dur-border': themeColors.bodyDivider || themePalette.neutralLight,
-      '--dur-accent-text': themePalette.white,
-      '--dur-bg-surface': themeColors.bodyBackground,
-      '--dur-error-text': themeColors.errorText || '#C86A6A',
-      '--dur-error-bg': themeColors.errorBackground || 'rgba(163, 61, 61, 0.15)'
-    } : {}),
+    '--dur-text': panelTextColor,
+    '--dur-text-secondary': themeColors ? (themeColors.bodySubtext || panelTextColor) : '#B8B8B0',
+    '--dur-border': panelBorderColor,
+    '--dur-accent-text': themePalette ? themePalette.white : '#1E1E1E',
+    '--dur-bg-surface': panelBackgroundColor,
+    '--dur-error-text': themeColors ? (themeColors.errorText || '#C86A6A') : '#C86A6A',
+    '--dur-error-bg': themeColors ? (themeColors.errorBackground || 'rgba(163, 61, 61, 0.15)') : 'rgba(163, 61, 61, 0.15)',
     '--dur-accent': accentColor,
     '--dur-tile-bg': tileBackgroundColor
   } as React.CSSProperties;

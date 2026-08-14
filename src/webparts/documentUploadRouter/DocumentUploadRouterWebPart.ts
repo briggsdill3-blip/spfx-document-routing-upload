@@ -3,6 +3,7 @@ import * as ReactDom from 'react-dom';
 import { Version } from '@microsoft/sp-core-library';
 import {
   type IPropertyPaneConfiguration,
+  type IPropertyPaneField,
   PropertyPaneTextField,
   PropertyPaneToggle,
   PropertyPaneDropdown
@@ -30,12 +31,19 @@ export interface IDocumentUploadRouterWebPartProps {
   customTitle: string;
   tileDescription: string;
   tileIconName: string;
+  useThemeColors: boolean;
   accentColorOverride: string;
   tileBackgroundColorOverride: string;
+  panelBackgroundColorOverride: string;
+  panelTextColorOverride: string;
+  panelBorderColorOverride: string;
 }
 
 const FALLBACK_ACCENT = '#BF9B30';
 const FALLBACK_TILE_BG = '#1E1E1E';
+const FALLBACK_PANEL_BG = '#1E1E1E';
+const FALLBACK_TEXT = '#F5F5F0';
+const FALLBACK_BORDER = '#3A3A3A';
 
 const ICON_OPTIONS = [
   { key: 'CloudUpload', text: 'Cloud upload' },
@@ -74,8 +82,12 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
         customTitle: this.properties.customTitle || '',
         tileDescription: this.properties.tileDescription || '',
         tileIconName: this.properties.tileIconName || 'CloudUpload',
+        useThemeColors: this.properties.useThemeColors !== undefined ? this.properties.useThemeColors : true,
         accentColorOverride: this.properties.accentColorOverride || '',
-        tileBackgroundColorOverride: this.properties.tileBackgroundColorOverride || ''
+        tileBackgroundColorOverride: this.properties.tileBackgroundColorOverride || '',
+        panelBackgroundColorOverride: this.properties.panelBackgroundColorOverride || '',
+        panelTextColorOverride: this.properties.panelTextColorOverride || '',
+        panelBorderColorOverride: this.properties.panelBorderColorOverride || ''
       }
     );
 
@@ -128,7 +140,14 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
   }
 
   protected get dataVersion(): Version {
-    return Version.parse('3.0');
+    return Version.parse('3.1');
+  }
+
+  protected onPropertyPaneFieldChanged(propertyPath: string, oldValue: unknown, newValue: unknown): void {
+    if (propertyPath === 'useThemeColors') {
+      this.context.propertyPane.refresh();
+    }
+    this.render();
   }
 
   private _handleColorFieldChange(propertyPath: string, oldValue: unknown, newValue: unknown): void {
@@ -155,6 +174,64 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
     const themeColors = this._theme ? this._theme.semanticColors : undefined;
     const accentDefault: string = (themePalette && themePalette.themePrimary) || FALLBACK_ACCENT;
     const tileBgDefault: string = (themeColors && themeColors.bodyBackground) || FALLBACK_TILE_BG;
+    const panelBgDefault: string = (themeColors && themeColors.bodyBackground) || FALLBACK_PANEL_BG;
+    const textDefault: string = (themeColors && themeColors.bodyText) || FALLBACK_TEXT;
+    const borderDefault: string = (themeColors && themeColors.bodyDivider) || FALLBACK_BORDER;
+
+    const useThemeColors = this.properties.useThemeColors !== undefined ? this.properties.useThemeColors : true;
+
+    const appearanceFields: IPropertyPaneField<unknown>[] = [
+      PropertyPaneToggle('useThemeColors', {
+        label: 'Colors',
+        onText: 'Automatic',
+        offText: 'Custom'
+      })
+    ];
+
+    if (!useThemeColors) {
+      appearanceFields.push(
+        PropertyFieldColorPicker('accentColorOverride', {
+          label: 'Accent Color',
+          selectedColor: this.properties.accentColorOverride || accentDefault,
+          onPropertyChange: this._handleColorFieldChange.bind(this),
+          properties: this.properties,
+          key: 'accentColorOverrideField',
+          style: PropertyFieldColorPickerStyle.Full
+        }) as IPropertyPaneField<unknown>,
+        PropertyFieldColorPicker('tileBackgroundColorOverride', {
+          label: 'Floating Button Background',
+          selectedColor: this.properties.tileBackgroundColorOverride || tileBgDefault,
+          onPropertyChange: this._handleColorFieldChange.bind(this),
+          properties: this.properties,
+          key: 'tileBackgroundColorOverrideField',
+          style: PropertyFieldColorPickerStyle.Full
+        }) as IPropertyPaneField<unknown>,
+        PropertyFieldColorPicker('panelBackgroundColorOverride', {
+          label: 'Panel Background',
+          selectedColor: this.properties.panelBackgroundColorOverride || panelBgDefault,
+          onPropertyChange: this._handleColorFieldChange.bind(this),
+          properties: this.properties,
+          key: 'panelBackgroundColorOverrideField',
+          style: PropertyFieldColorPickerStyle.Full
+        }) as IPropertyPaneField<unknown>,
+        PropertyFieldColorPicker('panelTextColorOverride', {
+          label: 'Panel Text',
+          selectedColor: this.properties.panelTextColorOverride || textDefault,
+          onPropertyChange: this._handleColorFieldChange.bind(this),
+          properties: this.properties,
+          key: 'panelTextColorOverrideField',
+          style: PropertyFieldColorPickerStyle.Full
+        }) as IPropertyPaneField<unknown>,
+        PropertyFieldColorPicker('panelBorderColorOverride', {
+          label: 'Panel Borders',
+          selectedColor: this.properties.panelBorderColorOverride || borderDefault,
+          onPropertyChange: this._handleColorFieldChange.bind(this),
+          properties: this.properties,
+          key: 'panelBorderColorOverrideField',
+          style: PropertyFieldColorPickerStyle.Full
+        }) as IPropertyPaneField<unknown>
+      );
+    }
 
     return {
       pages: [
@@ -195,24 +272,7 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
             },
             {
               groupName: 'Appearance',
-              groupFields: [
-                PropertyFieldColorPicker('accentColorOverride', {
-                  label: 'Accent Color',
-                  selectedColor: this.properties.accentColorOverride || accentDefault,
-                  onPropertyChange: this._handleColorFieldChange.bind(this),
-                  properties: this.properties,
-                  key: 'accentColorOverrideField',
-                  style: PropertyFieldColorPickerStyle.Full
-                }),
-                PropertyFieldColorPicker('tileBackgroundColorOverride', {
-                  label: 'Tile Background Color',
-                  selectedColor: this.properties.tileBackgroundColorOverride || tileBgDefault,
-                  onPropertyChange: this._handleColorFieldChange.bind(this),
-                  properties: this.properties,
-                  key: 'tileBackgroundColorOverrideField',
-                  style: PropertyFieldColorPickerStyle.Full
-                })
-              ]
+              groupFields: appearanceFields
             }
           ]
         }

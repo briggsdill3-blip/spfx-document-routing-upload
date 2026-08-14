@@ -12,6 +12,10 @@ export interface IDocumentUploadRouterProps {
   customTitle: string;
   tileDescription: string;
   tileIconName: string;
+  useThemeColors: boolean;
   accentColorOverride: string;
   tileBackgroundColorOverride: string;
+  panelBackgroundColorOverride: string;
+  panelTextColorOverride: string;
+  panelBorderColorOverride: string;
 }
