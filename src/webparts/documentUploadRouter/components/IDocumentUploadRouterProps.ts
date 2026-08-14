@@ -1,5 +1,6 @@
 import { SPFI } from '@pnp/sp';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
+import { WebPartContext } from '@microsoft/sp-webpart-base';
 import { ISiteEntry } from './ISiteEntry';
 
 export interface IDocumentUploadRouterProps {
@@ -7,6 +8,7 @@ export interface IDocumentUploadRouterProps {
   environmentMessage: string;
   userDisplayName: string;
   sp: SPFI;
+  webPartContext: WebPartContext;
   targetSites: ISiteEntry[];
   showTitle: boolean;
   customTitle: string;

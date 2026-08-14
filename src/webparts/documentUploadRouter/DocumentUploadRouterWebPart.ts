@@ -18,6 +18,9 @@ import '@pnp/sp/webs';
 import '@pnp/sp/lists';
 import '@pnp/sp/items';
 import '@pnp/sp/fields';
+import '@pnp/sp/files';
+import '@pnp/sp/folders';
+import '@pnp/sp/site-users/web';
 
 import * as strings from 'DocumentUploadRouterWebPartStrings';
 import DocumentUploadRouter from './components/DocumentUploadRouter';
@@ -77,6 +80,7 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
         environmentMessage: this._environmentMessage,
         userDisplayName: this.context.pageContext.user.displayName,
         sp: this._sp,
+        webPartContext: this.context,
         targetSites: this.properties.targetSites || [],
         showTitle: this.properties.showTitle !== undefined ? this.properties.showTitle : true,
         customTitle: this.properties.customTitle || '',
