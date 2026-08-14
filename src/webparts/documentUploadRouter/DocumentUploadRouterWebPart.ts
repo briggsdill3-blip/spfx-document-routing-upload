@@ -16,13 +16,13 @@ import '@pnp/sp/lists';
 import '@pnp/sp/items';
 import '@pnp/sp/fields';
 
-import * as strings from 'SiteContentIndexWebPartStrings';
-import SiteContentIndex from './components/SiteContentIndex';
-import { ISiteContentIndexProps } from './components/ISiteContentIndexProps';
+import * as strings from 'DocumentUploadRouterWebPartStrings';
+import DocumentUploadRouter from './components/DocumentUploadRouter';
+import { IDocumentUploadRouterProps } from './components/IDocumentUploadRouterProps';
 import { ISiteEntry } from './components/ISiteEntry';
 import { PropertyPaneSiteEntryChipInputField } from './controls/SiteEntryChipInputField';
 
-export interface ISiteContentIndexWebPartProps {
+export interface IDocumentUploadRouterWebPartProps {
   targetSites: ISiteEntry[];
   includeSystemLists: boolean;
   groupBySite: boolean;
@@ -46,7 +46,7 @@ const parseStaleDays = (raw: string): number => {
   return parsed;
 };
 
-export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISiteContentIndexWebPartProps> {
+export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<IDocumentUploadRouterWebPartProps> {
 
   private _theme: IReadonlyTheme | undefined;
   private _environmentMessage: string = '';
@@ -58,8 +58,8 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
       return;
     }
 
-    const element: React.ReactElement<ISiteContentIndexProps> = React.createElement(
-      SiteContentIndex,
+    const element: React.ReactElement<IDocumentUploadRouterProps> = React.createElement(
+      DocumentUploadRouter,
       {
         theme: this._theme,
         environmentMessage: this._environmentMessage,
@@ -126,7 +126,7 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
   }
 
   protected get dataVersion(): Version {
-    return Version.parse('2.1');
+    return Version.parse('1.0');
   }
 
   private _handleColorFieldChange(propertyPath: string, oldValue: unknown, newValue: unknown): void {
@@ -170,7 +170,7 @@ export default class SiteContentIndexWebPart extends BaseClientSideWebPart<ISite
                 }),
                 PropertyPaneTextField('customTitle', {
                   label: strings.CustomTitleFieldLabel,
-                  description: 'Leave blank to use the default: Site Content Index',
+                  description: 'Leave blank to use the default: Document Upload Router',
                   disabled: !this.properties.showTitle
                 })
               ]

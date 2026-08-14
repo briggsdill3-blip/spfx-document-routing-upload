@@ -2,17 +2,17 @@
   "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
   "version": "2.0",
   "bundles": {
-    "site-content-index-web-part": {
+    "document-upload-router-web-part": {
       "components": [
         {
-          "entrypoint": "./lib/webparts/siteContentIndex/SiteContentIndexWebPart.js",
-          "manifest": "./src/webparts/siteContentIndex/SiteContentIndexWebPart.manifest.json"
+          "entrypoint": "./lib/webparts/documentUploadRouter/DocumentUploadRouterWebPart.js",
+          "manifest": "./src/webparts/documentUploadRouter/DocumentUploadRouterWebPart.manifest.json"
         }
       ]
     }
   },
   "externals": {},
   "localizedResources": {
-    "SiteContentIndexWebPartStrings": "lib/webparts/siteContentIndex/loc/{locale}.js"
+    "DocumentUploadRouterWebPartStrings": "lib/webparts/documentUploadRouter/loc/{locale}.js"
   }
 }

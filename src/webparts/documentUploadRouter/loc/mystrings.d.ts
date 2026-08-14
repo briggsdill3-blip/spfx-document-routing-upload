@@ -1,17 +1,14 @@
-declare interface ISiteContentIndexWebPartStrings {
+declare interface IDocumentUploadRouterWebPartStrings {
   PropertyPaneDescription: string;
-  BasicGroupName: string;
-  DescriptionFieldLabel: string;
+  TitleGroupName: string;
   ConfigurationGroupName: string;
+  ShowTitleFieldLabel: string;
+  CustomTitleFieldLabel: string;
   TargetSitesFieldLabel: string;
   IncludeSystemListsFieldLabel: string;
   GroupBySiteFieldLabel: string;
   ExpandByDefaultFieldLabel: string;
-  OnlyUniquePermissionsFieldLabel: string;
   StaleDaysThresholdFieldLabel: string;
-  TitleGroupName: string;
-  ShowTitleFieldLabel: string;
-  CustomTitleFieldLabel: string;
   AppLocalEnvironmentSharePoint: string;
   AppLocalEnvironmentTeams: string;
   AppLocalEnvironmentOffice: string;
@@ -23,7 +20,7 @@ declare interface ISiteContentIndexWebPartStrings {
   UnknownEnvironment: string;
 }
 
-declare module 'SiteContentIndexWebPartStrings' {
-  const strings: ISiteContentIndexWebPartStrings;
+declare module 'DocumentUploadRouterWebPartStrings' {
+  const strings: IDocumentUploadRouterWebPartStrings;
   export = strings;
 }

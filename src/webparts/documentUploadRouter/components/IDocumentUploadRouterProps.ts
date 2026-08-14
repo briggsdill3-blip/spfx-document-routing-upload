@@ -2,7 +2,7 @@ import { SPFI } from '@pnp/sp';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
 import { ISiteEntry } from './ISiteEntry';
 
-export interface ISiteContentIndexProps {
+export interface IDocumentUploadRouterProps {
   theme: IReadonlyTheme | undefined;
   environmentMessage: string;
   userDisplayName: string;

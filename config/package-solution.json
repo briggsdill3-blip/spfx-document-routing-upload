@@ -1,8 +1,8 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
   "solution": {
-    "name": "site-content-index-client-side-solution",
-    "id": "a6559f2c-b329-475a-a535-fd940f84a367",
+    "name": "document-upload-router-client-side-solution",
+    "id": "27532e38-12cb-4fc6-a3fa-973996664a42",
     "version": "1.0.0.0",
     "includeClientSideAssets": true,
     "skipFeatureDeployment": true,
@@ -16,10 +16,10 @@
     },
     "metadata": {
       "shortDescription": {
-        "default": "Site Content Index description"
+        "default": "Document Upload Router description"
       },
       "longDescription": {
-        "default": "Lists every list and library across configured sites, with direct links, for KM oversight"
+        "default": "Routes uploaded documents to the correct library on the correct site with matching metadata applied automatically"
       },
       "screenshotPaths": [],
       "videoUrl": "",
@@ -27,14 +27,14 @@
     },
     "features": [
       {
-        "title": "Site Content Index Feature",
-        "description": "The feature that activates elements of the site-content-index solution.",
-        "id": "5024e434-d93d-4828-a2a8-2cbf8034ee1a",
+        "title": "Document Upload Router Feature",
+        "description": "The feature that activates elements of the document-upload-router solution.",
+        "id": "682c2927-a1a3-4d82-84ec-1349e12c2cb0",
         "version": "1.0.0.0"
       }
     ]
   },
   "paths": {
-    "zippedPackage": "solution/site-content-index.sppkg"
+    "zippedPackage": "solution/document-upload-router.sppkg"
   }
 }

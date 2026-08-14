@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { Web } from '@pnp/sp/webs';
-import styles from './SiteContentIndex.module.scss';
-import type { ISiteContentIndexProps } from './ISiteContentIndexProps';
+import styles from './DocumentUploadRouter.module.scss';
+import type { IDocumentUploadRouterProps } from './IDocumentUploadRouterProps';
 
 interface IListItem {
   Id: string;
@@ -56,7 +56,7 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const FALLBACK_ACCENT = '#BF9B30';
 const FALLBACK_STRIPE = '#2A2A2A';
 
-const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props) => {
+const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> = (props) => {
   const [results, setResults] = useState<ISiteResult[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -185,26 +185,23 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
     ? props.accentColorOverride
     : (themePalette ? themePalette.themePrimary : FALLBACK_ACCENT);
 
-  // Uses bodyBackgroundHovered, the same token the hover states already rely on,
-  // since Fluent guarantees it's visually distinct from the base background.
-  // neutralLighterAlt/neutralLight can land nearly identical to the background in dark themes.
   const stripeColor = props.stripeColorOverride && props.stripeColorOverride.trim().length > 0
     ? props.stripeColorOverride
     : (themeColors && themeColors.bodyBackgroundHovered ? themeColors.bodyBackgroundHovered : FALLBACK_STRIPE);
 
   const rootStyle: React.CSSProperties = {
     ...(themeColors && themePalette ? {
-      '--scix-text': themeColors.bodyText,
-      '--scix-text-secondary': themeColors.bodySubtext || themeColors.bodyText,
-      '--scix-bg-surface': themeColors.bodyBackground,
-      '--scix-bg-hover': themeColors.bodyBackgroundHovered || themeColors.bodyBackground,
-      '--scix-border': themeColors.bodyDivider || themePalette.neutralLight,
-      '--scix-accent-text': themePalette.white,
-      '--scix-error-bg': themeColors.errorBackground || 'rgba(163, 61, 61, 0.15)',
-      '--scix-error-text': themeColors.errorText || '#C86A6A'
+      '--dur-text': themeColors.bodyText,
+      '--dur-text-secondary': themeColors.bodySubtext || themeColors.bodyText,
+      '--dur-bg-surface': themeColors.bodyBackground,
+      '--dur-bg-hover': themeColors.bodyBackgroundHovered || themeColors.bodyBackground,
+      '--dur-border': themeColors.bodyDivider || themePalette.neutralLight,
+      '--dur-accent-text': themePalette.white,
+      '--dur-error-bg': themeColors.errorBackground || 'rgba(163, 61, 61, 0.15)',
+      '--dur-error-text': themeColors.errorText || '#C86A6A'
     } : {}),
-    '--scix-accent': accentColor,
-    '--scix-stripe-bg': stripeColor
+    '--dur-accent': accentColor,
+    '--dur-stripe-bg': stripeColor
   } as React.CSSProperties;
 
   const tableClass = `${styles.table} ${props.enableRowStriping ? styles.striped : ''}`;
@@ -238,7 +235,7 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
 
   if (siteUrls.length === 0) {
     return (
-      <section className={styles.siteContentIndex} style={rootStyle}>
+      <section className={styles.documentUploadRouter} style={rootStyle}>
         <div className={styles.errorState}>
           This web part needs to be configured. Open the edit panel and add one or more site URLs under Target Sites.
         </div>
@@ -248,7 +245,7 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
 
   if (loading) {
     return (
-      <section className={styles.siteContentIndex} style={rootStyle}>
+      <section className={styles.documentUploadRouter} style={rootStyle}>
         <div className={styles.loadingState}>
           <div className={styles.spinner} />
           <span>Loading site content...</span>
@@ -259,10 +256,10 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
 
   const displayTitle = props.customTitle && props.customTitle.trim().length > 0
     ? props.customTitle
-    : 'Site Content Index';
+    : 'Document Upload Router';
 
   return (
-    <section className={styles.siteContentIndex} style={rootStyle}>
+    <section className={styles.documentUploadRouter} style={rootStyle}>
       <div className={styles.header}>
         {props.showTitle && <h2 className={styles.title}>{displayTitle}</h2>}
         <div className={styles.headerControls}>
@@ -356,4 +353,4 @@ const SiteContentIndex: React.FunctionComponent<ISiteContentIndexProps> = (props
   );
 };
 
-export default SiteContentIndex;
+export default DocumentUploadRouter;
