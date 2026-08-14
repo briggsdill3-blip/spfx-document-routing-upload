@@ -68,13 +68,15 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
     setAvailableLibraries([]);
 
     const web = Web([props.sp.web, site.url]);
+    const hiddenLibraries = site.hiddenLibraries || [];
+
     web.lists
       .select('Title', 'BaseTemplate', 'Hidden')
       .filter('BaseTemplate eq 101 and Hidden eq false')()
       .then((rawLists) => {
         const names = (rawLists as { Title: string }[])
           .map((raw) => raw.Title)
-          .filter((name) => site.hiddenLibraries.indexOf(name) === -1)
+          .filter((name) => hiddenLibraries.indexOf(name) === -1)
           .sort((a, b) => a.localeCompare(b));
         setAvailableLibraries(names);
         setLibraryLoadState('idle');
@@ -130,7 +132,7 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
     ? props.panelBorderColorOverride
     : (themeColors ? (themeColors.bodyDivider || '#3A3A3A') : '#3A3A3A');
 
-  const rootStyle: React.CSSProperties = {
+  const cssVars: React.CSSProperties = {
     '--dur-text': panelTextColor,
     '--dur-text-secondary': themeColors ? (themeColors.bodySubtext || panelTextColor) : '#B8B8B0',
     '--dur-border': panelBorderColor,
@@ -157,7 +159,7 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
   const noRoutesConfigured = props.targetSites.length === 0;
 
   return (
-    <section className={styles.documentUploadRouter} style={rootStyle}>
+    <section className={styles.documentUploadRouter} style={cssVars}>
       <button
         type="button"
         className={styles.floatingButton}
@@ -179,113 +181,115 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
         headerText={displayTitle}
         closeButtonAriaLabel="Close"
       >
-        {noRoutesConfigured && (
-          <div className={styles.errorState}>
-            No sites have been configured yet. Open the web part's edit panel and add at least one site under Target Sites.
-          </div>
-        )}
-
-        {!noRoutesConfigured && step === 'route' && (
-          <div className={styles.stepContent}>
-            {lastRouteEntry && (
-              <div className={styles.lastRouteBox}>
-                <span className={styles.lastRouteText}>
-                  Last used: {lastRouteEntry.label}
-                </span>
-                <button type="button" className={styles.primaryButton} onClick={handleUseLastRoute}>
-                  Use this again
-                </button>
-              </div>
-            )}
-
-            <label className={styles.fieldLabel} htmlFor="dur-site-select">
-              Where does the library live?
-            </label>
-            <p className={styles.fieldHint}>Pick the site or product office that owns the document.</p>
-            <select
-              id="dur-site-select"
-              className={styles.select}
-              value=""
-              onChange={(e) => handleSelectSite(e.target.value)}
-            >
-              <option value="" disabled>Select a site</option>
-              {props.targetSites.map((entry) => (
-                <option key={entry.url} value={entry.url}>{entry.label}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {step === 'library' && selectedSite && (
-          <div className={styles.stepContent}>
-            <div className={styles.breadcrumb}>
-              <span>{selectedSite.label}</span>
-              <button type="button" className={styles.changeLink} onClick={() => setStep('route')}>
-                Change
-              </button>
+        <div className={styles.panelInner} style={cssVars}>
+          {noRoutesConfigured && (
+            <div className={styles.errorState}>
+              No sites have been configured yet. Open the web part's edit panel and add at least one site under Target Sites.
             </div>
+          )}
 
-            <label className={styles.fieldLabel} htmlFor="dur-library-select">
-              Which document library?
-            </label>
-            <p className={styles.fieldHint}>These are the libraries you can upload to on that site.</p>
-
-            {libraryLoadState === 'loading' && (
-              <div className={styles.loadingState}>Loading libraries...</div>
-            )}
-            {libraryLoadState === 'error' && (
-              <div className={styles.errorState}>
-                Couldn't load libraries for this site. Check the URL and confirm you have access, or contact your KM team.
-              </div>
-            )}
-            {libraryLoadState === 'idle' && availableLibraries.length === 0 && (
-              <div className={styles.errorState}>
-                No document libraries are available on this site.
-              </div>
-            )}
-            {libraryLoadState === 'idle' && availableLibraries.length > 0 && (
-              <>
-                <select
-                  id="dur-library-select"
-                  className={styles.select}
-                  value={selectedLibrary}
-                  onChange={(e) => setSelectedLibrary(e.target.value)}
-                >
-                  <option value="">Select a library</option>
-                  {availableLibraries.map((name) => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-
-                <div className={styles.stepActions}>
-                  <button type="button" className={styles.secondaryButton} onClick={() => setStep('route')}>
-                    Back
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.primaryButton}
-                    onClick={handleContinueToForm}
-                    disabled={selectedLibrary.trim().length === 0}
-                  >
-                    Continue
+          {!noRoutesConfigured && step === 'route' && (
+            <div className={styles.stepContent}>
+              {lastRouteEntry && (
+                <div className={styles.lastRouteBox}>
+                  <span className={styles.lastRouteText}>
+                    Last used: {lastRouteEntry.label}
+                  </span>
+                  <button type="button" className={styles.primaryButton} onClick={handleUseLastRoute}>
+                    Use this again
                   </button>
                 </div>
-              </>
-            )}
-          </div>
-        )}
+              )}
 
-        {step === 'form' && selectedSite && (
-          <div className={styles.stepContent}>
-            <div className={styles.breadcrumb}>
-              <span>{selectedSite.label} &rsaquo; {selectedLibrary}</span>
-              <button type="button" className={styles.changeLink} onClick={() => setStep('library')}>
-                Change
-              </button>
+              <label className={styles.fieldLabel} htmlFor="dur-site-select">
+                Where does the library live?
+              </label>
+              <p className={styles.fieldHint}>Pick the site or product office that owns the document.</p>
+              <select
+                id="dur-site-select"
+                className={styles.select}
+                value=""
+                onChange={(e) => handleSelectSite(e.target.value)}
+              >
+                <option value="" disabled>Select a site</option>
+                {props.targetSites.map((entry) => (
+                  <option key={entry.url} value={entry.url}>{entry.label}</option>
+                ))}
+              </select>
             </div>
-            <p>The file picker and metadata form for this library come next.</p>
-          </div>
-        )}
+          )}
+
+          {step === 'library' && selectedSite && (
+            <div className={styles.stepContent}>
+              <div className={styles.breadcrumb}>
+                <span>{selectedSite.label}</span>
+                <button type="button" className={styles.changeLink} onClick={() => setStep('route')}>
+                  Change
+                </button>
+              </div>
+
+              <label className={styles.fieldLabel} htmlFor="dur-library-select">
+                Which document library?
+              </label>
+              <p className={styles.fieldHint}>These are the libraries you can upload to on that site.</p>
+
+              {libraryLoadState === 'loading' && (
+                <div className={styles.loadingState}>Loading libraries...</div>
+              )}
+              {libraryLoadState === 'error' && (
+                <div className={styles.errorState}>
+                  Couldn't load libraries for this site. Check the URL and confirm you have access, or contact your KM team.
+                </div>
+              )}
+              {libraryLoadState === 'idle' && availableLibraries.length === 0 && (
+                <div className={styles.errorState}>
+                  No document libraries are available on this site.
+                </div>
+              )}
+              {libraryLoadState === 'idle' && availableLibraries.length > 0 && (
+                <>
+                  <select
+                    id="dur-library-select"
+                    className={styles.select}
+                    value={selectedLibrary}
+                    onChange={(e) => setSelectedLibrary(e.target.value)}
+                  >
+                    <option value="">Select a library</option>
+                    {availableLibraries.map((name) => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+
+                  <div className={styles.stepActions}>
+                    <button type="button" className={styles.secondaryButton} onClick={() => setStep('route')}>
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={handleContinueToForm}
+                      disabled={selectedLibrary.trim().length === 0}
+                    >
+                      Continue
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {step === 'form' && selectedSite && (
+            <div className={styles.stepContent}>
+              <div className={styles.breadcrumb}>
+                <span>{selectedSite.label} &rsaquo; {selectedLibrary}</span>
+                <button type="button" className={styles.changeLink} onClick={() => setStep('library')}>
+                  Change
+                </button>
+              </div>
+              <p>The file picker and metadata form for this library come next.</p>
+            </div>
+          )}
+        </div>
       </Panel>
     </section>
   );

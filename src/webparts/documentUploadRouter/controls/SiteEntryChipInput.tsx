@@ -93,10 +93,11 @@ const SiteEntryChipInput: React.FunctionComponent<ISiteEntryChipInputProps> = (p
       if (entry.url !== entryUrl) {
         return entry;
       }
-      const isHidden = entry.hiddenLibraries.indexOf(libraryName) !== -1;
+      const currentHidden = entry.hiddenLibraries || [];
+      const isHidden = currentHidden.indexOf(libraryName) !== -1;
       const nextHidden = isHidden
-        ? entry.hiddenLibraries.filter((name) => name !== libraryName)
-        : [...entry.hiddenLibraries, libraryName];
+        ? currentHidden.filter((name) => name !== libraryName)
+        : [...currentHidden, libraryName];
       return { ...entry, hiddenLibraries: nextHidden };
     });
     props.onChange(updated);
@@ -130,7 +131,8 @@ const SiteEntryChipInput: React.FunctionComponent<ISiteEntryChipInputProps> = (p
           {props.entries.map((entry) => {
             const isExpanded = expandedUrl === entry.url;
             const libState = librariesByUrl[entry.url];
-            const hiddenCount = entry.hiddenLibraries.length;
+            const hiddenLibraries = entry.hiddenLibraries || [];
+            const hiddenCount = hiddenLibraries.length;
 
             return (
               <li key={entry.url} className={styles.chipBlock}>
@@ -171,16 +173,18 @@ const SiteEntryChipInput: React.FunctionComponent<ISiteEntryChipInputProps> = (p
                         <p className={styles.libraryHint}>
                           Uncheck any library you don't want available to end users.
                         </p>
-                        {libState.map((lib) => (
-                          <label key={lib.name} className={styles.libraryRow}>
-                            <input
-                              type="checkbox"
-                              checked={entry.hiddenLibraries.indexOf(lib.name) === -1}
-                              onChange={() => toggleLibraryHidden(entry.url, lib.name)}
-                            />
-                            <span>{lib.name}</span>
-                          </label>
-                        ))}
+                        <div className={styles.libraryScroll}>
+                          {libState.map((lib) => (
+                            <label key={lib.name} className={styles.libraryRow}>
+                              <input
+                                type="checkbox"
+                                checked={hiddenLibraries.indexOf(lib.name) === -1}
+                                onChange={() => toggleLibraryHidden(entry.url, lib.name)}
+                              />
+                              <span>{lib.name}</span>
+                            </label>
+                          ))}
+                        </div>
                       </>
                     )}
                   </div>

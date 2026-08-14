@@ -3,6 +3,11 @@
   color: var(--dur-text, #F5F5F0);
 }
 
+.panelInner {
+  font-family: inherit;
+  color: var(--dur-text, #F5F5F0);
+}
+
 .floatingButton {
   position: fixed;
   bottom: 24px;
