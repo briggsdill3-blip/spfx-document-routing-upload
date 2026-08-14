@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as ReactDom from 'react-dom';
+import { SPFI } from '@pnp/sp';
 import {
   IPropertyPaneField,
   IPropertyPaneCustomFieldProps,
@@ -11,6 +12,7 @@ import { ISiteEntry } from '../components/ISiteEntry';
 export interface ISiteEntryChipInputFieldProps {
   label: string;
   entries: ISiteEntry[];
+  sp: SPFI;
   onPropertyChange: (propertyPath: string, newValue: ISiteEntry[]) => void;
 }
 
@@ -29,6 +31,7 @@ export class PropertyPaneSiteEntryChipInputField implements IPropertyPaneField<I
       key: targetProperty,
       label: properties.label,
       entries: properties.entries,
+      sp: properties.sp,
       onPropertyChange: properties.onPropertyChange,
       onRender: this.onRender.bind(this),
       onDispose: this.onDispose.bind(this)
@@ -52,10 +55,11 @@ export class PropertyPaneSiteEntryChipInputField implements IPropertyPaneField<I
     }
 
     const element: React.ReactElement<ISiteEntryChipInputProps> = React.createElement(SiteEntryChipInput, {
-        label: this.properties.label,
-        entries: this.properties.entries,
-        onChange: this.onChanged.bind(this)
-      });
+      label: this.properties.label,
+      entries: this.properties.entries,
+      sp: this.properties.sp,
+      onChange: this.onChanged.bind(this)
+    });
 
     ReactDom.render(element, elem);
   }

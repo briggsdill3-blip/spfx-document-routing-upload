@@ -128,7 +128,7 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
   }
 
   protected get dataVersion(): Version {
-    return Version.parse('2.0');
+    return Version.parse('3.0');
   }
 
   private _handleColorFieldChange(propertyPath: string, oldValue: unknown, newValue: unknown): void {
@@ -140,6 +140,7 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
     this._targetSitesField = new PropertyPaneSiteEntryChipInputField('targetSites', {
       label: strings.TargetSitesFieldLabel,
       entries: this.properties.targetSites || [],
+      sp: this._sp,
       onPropertyChange: (propertyPath: string, newValue: ISiteEntry[]) => {
         this.properties.targetSites = newValue;
         this.render();
