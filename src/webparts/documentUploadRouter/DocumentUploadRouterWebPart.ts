@@ -199,8 +199,7 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
     if (!useThemeColors) {
       appearanceFields.push(
         PropertyFieldColorPicker('accentColorOverride', {
-          label: 'Accent Color',
-          description: 'Buttons, links, the progress bar, and the active step indicator throughout the form.',
+          label: 'Accent Color (buttons, links, progress bar, active step)',
           selectedColor: this.properties.accentColorOverride || accentDefault,
           onPropertyChange: this._handleColorFieldChange.bind(this),
           properties: this.properties,
@@ -209,7 +208,6 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
         }) as IPropertyPaneField<unknown>,
         PropertyFieldColorPicker('tileBackgroundColorOverride', {
           label: 'Floating Button Background',
-          description: 'The background behind the floating button itself, before it is clicked.',
           selectedColor: this.properties.tileBackgroundColorOverride || tileBgDefault,
           onPropertyChange: this._handleColorFieldChange.bind(this),
           properties: this.properties,
@@ -217,8 +215,7 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
           style: PropertyFieldColorPickerStyle.Inline
         }) as IPropertyPaneField<unknown>,
         PropertyFieldColorPicker('panelBackgroundColorOverride', {
-          label: 'Panel Background',
-          description: 'The main background of the upload panel that opens.',
+          label: 'Panel Background (main background of the upload panel)',
           selectedColor: this.properties.panelBackgroundColorOverride || panelBgDefault,
           onPropertyChange: this._handleColorFieldChange.bind(this),
           properties: this.properties,
@@ -226,8 +223,7 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
           style: PropertyFieldColorPickerStyle.Inline
         }) as IPropertyPaneField<unknown>,
         PropertyFieldColorPicker('panelTextColorOverride', {
-          label: 'Panel Text',
-          description: 'Body text color throughout the panel.',
+          label: 'Panel Text (body text throughout the panel)',
           selectedColor: this.properties.panelTextColorOverride || textDefault,
           onPropertyChange: this._handleColorFieldChange.bind(this),
           properties: this.properties,
@@ -235,8 +231,7 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
           style: PropertyFieldColorPickerStyle.Inline
         }) as IPropertyPaneField<unknown>,
         PropertyFieldColorPicker('panelBorderColorOverride', {
-          label: 'Panel Borders',
-          description: 'Dividers, input outlines, and card borders throughout the panel.',
+          label: 'Panel Borders (dividers and input outlines)',
           selectedColor: this.properties.panelBorderColorOverride || borderDefault,
           onPropertyChange: this._handleColorFieldChange.bind(this),
           properties: this.properties,
@@ -244,8 +239,7 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
           style: PropertyFieldColorPickerStyle.Inline
         }) as IPropertyPaneField<unknown>,
         PropertyFieldColorPicker('fieldBackgroundColorOverride', {
-          label: 'Field Background',
-          description: 'Background of text inputs, dropdowns, and the file picker inside the form.',
+          label: 'Field Background (text inputs, dropdowns, file picker)',
           selectedColor: this.properties.fieldBackgroundColorOverride || fieldBgDefault,
           onPropertyChange: this._handleColorFieldChange.bind(this),
           properties: this.properties,
@@ -253,8 +247,7 @@ export default class DocumentUploadRouterWebPart extends BaseClientSideWebPart<I
           style: PropertyFieldColorPickerStyle.Inline
         }) as IPropertyPaneField<unknown>,
         PropertyFieldColorPicker('mutedBackgroundColorOverride', {
-          label: 'Muted Background',
-          description: 'Background for informational banners, the step indicator\'s inactive dots, and the last-used-route box.',
+          label: 'Muted Background (banners, inactive step dots, last-used box)',
           selectedColor: this.properties.mutedBackgroundColorOverride || mutedBgDefault,
           onPropertyChange: this._handleColorFieldChange.bind(this),
           properties: this.properties,
