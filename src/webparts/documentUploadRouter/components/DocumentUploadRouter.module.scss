@@ -282,21 +282,21 @@
 .caveatNote {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  background-color: var(--dur-bg-surface, #1E1E1E);
-  border-left: 2px solid var(--dur-border, #3A3A3A);
-  border-radius: 4px;
-  padding: 10px 12px;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--dur-text-secondary, #B8B8B0);
+  gap: 10px;
+  background-color: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--dur-border, #3A3A3A);
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--dur-text, #F5F5F0);
 }
 
 .caveatIcon {
-  font-size: 14px;
+  font-size: 18px;
   flex-shrink: 0;
   margin-top: 1px;
-  color: var(--dur-text-secondary, #B8B8B0);
+  color: var(--dur-text, #F5F5F0);
 }
 
 .rawErrorText {

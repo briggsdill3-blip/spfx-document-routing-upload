@@ -200,6 +200,7 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
           .filter((f) => !f.Hidden && !f.ReadOnlyField)
           .filter((f) => SUPPORTED_FIELD_TYPES.indexOf(f.TypeAsString) !== -1)
           .filter((f) => SYSTEM_FIELD_BLACKLIST.indexOf(f.InternalName) === -1)
+          .filter((f) => f.InternalName.indexOf('_') !== 0)
           .map((f) => ({
             internalName: f.InternalName,
             title: f.Title,
@@ -338,20 +339,29 @@ const DocumentUploadRouter: React.FunctionComponent<IDocumentUploadRouterProps> 
     } catch (err) {
       console.error(`Upload failed for ${file.name}`, err);
       const rawMessage = err && (err as Error).message ? (err as Error).message : String(err);
+      const lowerMessage = rawMessage.toLowerCase();
+
       const looksLikePermissionError = rawMessage.indexOf('403') !== -1
-        || rawMessage.toLowerCase().indexOf('access denied') !== -1
-        || rawMessage.toLowerCase().indexOf('forbidden') !== -1;
+        || lowerMessage.indexOf('access denied') !== -1
+        || lowerMessage.indexOf('forbidden') !== -1;
+
+      const looksLikeDuplicateFile = lowerMessage.indexOf('already exists') !== -1;
 
       if (looksLikePermissionError) {
         setIsPermissionError(true);
       }
 
+      let friendlyMessage = 'Something went wrong uploading this file.';
+      if (looksLikePermissionError) {
+        friendlyMessage = 'No access to upload here.';
+      } else if (looksLikeDuplicateFile) {
+        friendlyMessage = `A file named "${file.name}" already exists in this library. Rename the file or delete the existing one, then try again.`;
+      }
+
       return {
         fileName: file.name,
         status: 'error',
-        errorMessage: looksLikePermissionError
-          ? 'No access to upload here.'
-          : 'Something went wrong uploading this file.',
+        errorMessage: friendlyMessage,
         rawError: rawMessage
       };
     }
